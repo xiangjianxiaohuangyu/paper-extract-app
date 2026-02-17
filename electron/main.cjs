@@ -1,5 +1,8 @@
-const { app, BrowserWindow } = require('electron')
+const { app, BrowserWindow, Menu } = require('electron')
 const path = require('path')
+
+// 移除应用程序菜单
+Menu.setApplicationMenu(null)
 
 function createWindow() {
   const win = new BrowserWindow({
@@ -17,7 +20,6 @@ function createWindow() {
   if (isDev) {
     // 开发模式：加载 Vite 开发服务器
     win.loadURL('http://localhost:5173')
-    win.webContents.openDevTools()
   } else {
     // 生产模式：加载构建后的文件
     win.loadFile(path.join(__dirname, '../dist/index.html'))
