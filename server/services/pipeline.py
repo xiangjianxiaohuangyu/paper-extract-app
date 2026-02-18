@@ -6,7 +6,6 @@ from typing import List, Dict
 from . import pdf_parser, llm_service
 from .log_service import push_log
 
-
 async def run_pipeline(file_paths: List[str], fields: List[str]) -> Dict:
     """
     完整的解析流水线：PDF解析 -> 分块 -> 字段提取 -> 结果汇总
@@ -30,38 +29,24 @@ async def run_pipeline(file_paths: List[str], fields: List[str]) -> Dict:
 
     all_results = []
     for file_path in file_paths:
-        await push_log("analyze", f"正在解析文件: {file_path}")
+        await push_log("analyze", f"开始解析文件: {file_path}")
 
         # Step 1: 解析 PDF
         await push_log("analyze", "正在解析 PDF...")
-        chunks = pdf_parser.parse_pdf(file_path)
-        await push_log("analyze", f"PDF 解析完成，共 {len(chunks)} 个文本块")
+        content = pdf_parser.parse_pdf(file_path)
+        await push_log("analyze", f"PDF 解析完成，内容长度: {len(content) if content else 0} 字符")
 
-        # Step 2: 分块
-        await push_log("analyze", "正在分块...")
-        split_chunks = split_documents(chunks)
-        await push_log("analyze", f"分块完成，共 {len(split_chunks)} 块")
+    #     # Step 2: 字段提取（不分块，直接对整个内容提取）
+    #     await push_log("analyze", "正在调用模型提取字段...")
+    #     extracted = llm_service.extract_fields(content, fields)
+    #     await push_log("analyze", "字段提取完成")
 
-        # Step 3: 字段提取
-        await push_log("analyze", "正在调用模型提取字段...")
-        chunk_results = []
-        for i, chunk in enumerate(split_chunks):
-            result = llm_service.extract_fields(chunk, fields)
-            chunk_results.append(result)
-            if (i + 1) % 5 == 0:
-                await push_log("analyze", f"已处理 {i + 1}/{len(split_chunks)} 块")
+    #     all_results.append({
+    #         "file": file_path,
+    #         "extracted": extracted
+    #     })
 
-        await push_log("analyze", "字段提取完成")
-
-        # Step 4: 汇总结果
-        await push_log("analyze", "正在汇总结果...")
-        merged = merge_results(chunk_results)
-        all_results.append({
-            "file": file_path,
-            "extracted": merged
-        })
-
-    await push_log("analyze", f"解析完成，共处理 {len(all_results)} 个文件")
+    # await push_log("analyze", f"解析完成，共处理 {len(all_results)} 个文件")
 
     return {
         "total_files": len(file_paths),

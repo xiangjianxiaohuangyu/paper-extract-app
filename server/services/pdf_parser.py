@@ -2,25 +2,29 @@
 PDF 解析服务
 负责解析 PDF 文件并提取文本内容
 """
-from typing import List
+from typing import Optional
+from langchain_community.document_loaders import PyPDFLoader
 
 
-def parse_pdf(file_path: str) -> List[str]:
+def parse_pdf(file_path: str) -> Optional[str]:
     """
-    解析 PDF 文件，返回文本块列表
+    解析 PDF 文件，返回完整的文本内容
 
     Args:
         file_path: PDF 文件路径
 
     Returns:
-        文本块列表
-
-    Note:
-        TODO: 实现 PDF 解析逻辑
-        - 使用 pypdf 或 pdfplumber 库读取 PDF
-        - 将文本内容分块返回
+        PDF 的完整文本内容
     """
-    pass
+    try:
+        loader = PyPDFLoader(file_path)
+        documents = loader.load()
+        # 合并所有页面的文本内容
+        content = "\n".join([doc.page_content for doc in documents])
+        return content
+    except Exception as e:
+        print(f"PDF 解析失败: {e}")
+        return None
 
 
 def get_pdf_info(file_path: str) -> dict:
@@ -32,8 +36,17 @@ def get_pdf_info(file_path: str) -> dict:
 
     Returns:
         包含页数、标题等信息的字典
-
-    Note:
-        TODO: 实现获取 PDF 元数据
     """
-    pass
+    try:
+        loader = PyPDFLoader(file_path)
+        documents = loader.load()
+        return {
+            "pages": len(documents),
+            "success": True
+        }
+    except Exception as e:
+        return {
+            "success": False,
+            "error": str(e)
+        }
+
