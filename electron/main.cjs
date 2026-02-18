@@ -20,7 +20,7 @@ function createWindow() {
   })
 
   // 默认打开 DevTools
-  win.webContents.openDevTools()
+  //win.webContents.openDevTools()
 
   // 加载 Vite 开发服务器或生产构建
   const isDev = process.env.NODE_ENV !== 'production'

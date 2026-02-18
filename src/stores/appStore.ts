@@ -43,9 +43,11 @@ export type ModuleType = 'analyze' | 'config' | 'env'
 interface AppState {
   // 文章解析相关
   selectedFiles: FileItem[]
+  extractFields: string[]
   isAnalyzing: boolean
   analyzeResult: any | null
   addFiles: (files: FileItem[]) => void
+  setExtractFields: (fields: string[]) => void
   removeFile: (id: string) => void
   clearFiles: () => void
   setAnalyzing: (analyzing: boolean) => void
@@ -76,8 +78,11 @@ export const useAppStore = create<AppState>()(
     (set) => ({
   // 文章解析相关状态
   selectedFiles: [],
+  extractFields: ['题目', '创新点', '主要内容', '解决的问题'],
   isAnalyzing: false,
   analyzeResult: null,
+
+  setExtractFields: (fields) => set({ extractFields: fields }),
 
   addFiles: (files) =>
     set((state) => {
@@ -147,6 +152,7 @@ export const useAppStore = create<AppState>()(
       name: 'paper-extract-storage',
       partialize: (state) => ({
         config: state.config,
+        extractFields: state.extractFields,
       }),
     }
   )
