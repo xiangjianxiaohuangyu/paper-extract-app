@@ -4,7 +4,7 @@
 """
 from typing import List, Dict
 import tiktoken
-from . import pdf_parser, llm_service
+from . import pdf_parser, llm_service, config_service
 from .log_service import push_log
 
 # Token 预估函数
@@ -114,6 +114,12 @@ async def run_pipeline(file_paths: List[str], fields: List[str]) -> Dict:
     await push_log("analyze", f"开始解析 {len(file_paths)} 个文件...")
 
     all_results = []
+
+    # 获取配置中的 API Key 和模型名称（使用最近保存的配置）
+    config = await config_service.get_latest_config()
+    api_key = config.get("api_key", "")
+    model_name = config.get("model_name", "qwen-max")
+
     for file_path in file_paths:
         await push_log("analyze", f"开始解析文件: {file_path}")
 
@@ -123,20 +129,24 @@ async def run_pipeline(file_paths: List[str], fields: List[str]) -> Dict:
         await push_log("analyze", f"PDF 解析完成，内容长度: {len(content) if content else 0} 字符")
 
         # Step 2: 预估 token 和费用
-        input_tokens, estimated_cost = await estimate_and_log_tokens(content, fields)
+        input_tokens, estimated_cost = await estimate_and_log_tokens(content, fields, model_name)
         await push_log("analyze", f"预估输入 token: {input_tokens}，预估费用: {estimated_cost}")
 
-    #     # Step 3: 字段提取
-    #     await push_log("analyze", "正在调用模型提取字段...")
-    #     extracted = llm_service.extract_fields(content, fields)
-    #     await push_log("analyze", "字段提取完成")
+        # Step 3: 字段提取
+        await push_log("analyze", "正在调用模型提取字段...")
 
-    #     all_results.append({
-    #         "file": file_path,
-    #         "extracted": extracted
-    #     })
+        result = llm_service.extract_fields(content, fields, model_name, api_key)
+        extracted = result.get("parsed", {})
+        raw_response = result.get("raw", "")
+        await push_log("analyze", f"模型原始返回: {raw_response[:500]}...")
+        await push_log("analyze", "字段提取完成")
 
-    # await push_log("analyze", f"解析完成，共处理 {len(all_results)} 个文件")
+        all_results.append({
+            "file": file_path,
+            "extracted": extracted
+        })
+
+    await push_log("analyze", f"解析完成，共处理 {len(all_results)} 个文件")
 
     return {
         "total_files": len(file_paths),

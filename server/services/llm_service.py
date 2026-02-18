@@ -19,20 +19,29 @@ def call_llm(prompt: str, model_name: str = "qwen-max", api_key: str = "") -> st
     Returns:
         LLM 返回的文本
     """
+    print(f"[call_llm] 开始调用, model={model_name}, prompt长度={len(prompt)}")
+
     if not api_key:
         raise ValueError("API Key 不能为空")
 
-    # 使用 langchain-openai 兼容千问 API
-    # 千问 API 兼容 OpenAI 接口
-    llm = ChatOpenAI(
-        model=model_name,
-        api_key=api_key,
-        base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
-        temperature=0.1
-    )
+    try:
+        # 使用 langchain-openai 兼容千问 API
+        # 千问 API 兼容 OpenAI 接口
+        llm = ChatOpenAI(
+            model=model_name,
+            api_key=api_key,
+            base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
+            temperature=0.1
+        )
 
-    response = llm.invoke(prompt)
-    return response.content
+        response = llm.invoke(prompt)
+        print(f"[call_llm] 响应类型: {type(response)}, content长度: {len(response.content) if response.content else 0}")
+        return response.content
+    except Exception as e:
+        import traceback
+        print(f"[call_llm] 调用失败: {e}")
+        print(f"[call_llm] 详细堆栈: {traceback.format_exc()}")
+        raise
 
 
 def extract_fields(content: str, fields: List[str], model_name: str = "qwen-max", api_key: str = "") -> Dict:
@@ -46,7 +55,7 @@ def extract_fields(content: str, fields: List[str], model_name: str = "qwen-max"
         api_key: API 密钥
 
     Returns:
-        提取结果字典
+        提取结果字典（包含 parsed 和 raw 字段）
     """
     # 构建 prompt
     fields_str = ", ".join(fields)
@@ -64,21 +73,35 @@ def extract_fields(content: str, fields: List[str], model_name: str = "qwen-max"
 {content[:150000]}  # 限制内容长度
 """
 
+    raw_response = ""  # 初始化原始响应
+
     try:
         # 调用 LLM
-        response = call_llm(prompt, model_name, api_key)
+        raw_response = call_llm(prompt, model_name, api_key)
+        print(f"[DEBUG] LLM 原始响应前200字符: {raw_response[:200]}")
 
         # 解析 JSON 响应
         # 尝试提取 JSON 部分
-        response = response.strip()
+        response = raw_response.strip()
         if "```json" in response:
             response = response.split("```json")[1].split("```")[0]
         elif "```" in response:
             response = response.split("```")[1].split("```")[0]
 
-        result = json.loads(response.strip())
-        return result
+        parsed_result = json.loads(response.strip())
+
+        # 返回包含解析结果和原始结果
+        return {
+            "parsed": parsed_result,
+            "raw": raw_response
+        }
 
     except Exception as e:
+        import traceback
         print(f"字段提取失败: {e}")
-        return {field: "" for field in fields}
+        print(f"原始响应: {raw_response[:500] if raw_response else '未获取到响应'}")
+        print(f"详细堆栈: {traceback.format_exc()}")
+        return {
+            "parsed": {field: "" for field in fields},
+            "raw": raw_response  # 现在 raw_response 一定存在
+        }
