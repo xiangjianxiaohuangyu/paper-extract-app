@@ -19,6 +19,7 @@ function AnalyzePage() {
   const [isDragging, setIsDragging] = useState(false)
   const [newField, setNewField] = useState('')
   const [savePath, setSavePath] = useState('')
+  const [saveFormat, setSaveFormat] = useState('json')
 
   const {
     selectedFiles,
@@ -151,7 +152,7 @@ function AnalyzePage() {
 
     try {
       const filePaths = selectedFiles.map((f) => f.path)
-      const result = await analyzePdf(filePaths, extractFields, savePath || undefined)
+      const result = await analyzePdf(filePaths, extractFields, savePath || undefined, saveFormat)
       setAnalyzeResult(result)
     } catch (error) {
       console.error('解析失败:', error)
@@ -304,6 +305,35 @@ function AnalyzePage() {
           >
             选择目录
           </button>
+        </div>
+      </div>
+
+      {/* 保存格式设置 */}
+      <div className="mb-6">
+        <h3 className="text-lg font-medium text-gray-700 mb-3">保存格式</h3>
+        <div className="flex gap-4">
+          <label className="inline-flex items-center">
+            <input
+              type="radio"
+              name="saveFormat"
+              value="json"
+              checked={saveFormat === 'json'}
+              onChange={(e) => setSaveFormat(e.target.value)}
+              className="form-radio h-4 w-4 text-blue-600"
+            />
+            <span className="ml-2 text-gray-700">JSON</span>
+          </label>
+          <label className="inline-flex items-center">
+            <input
+              type="radio"
+              name="saveFormat"
+              value="excel"
+              checked={saveFormat === 'excel'}
+              onChange={(e) => setSaveFormat(e.target.value)}
+              className="form-radio h-4 w-4 text-blue-600"
+            />
+            <span className="ml-2 text-gray-700">Excel</span>
+          </label>
         </div>
       </div>
 

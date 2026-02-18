@@ -10,6 +10,7 @@ from typing import List, Optional
 import json
 import os
 from datetime import datetime
+import pandas as pd
 
 from services import pipeline, config_service, env_service
 from services.log_service import manager
@@ -31,6 +32,7 @@ class AnalyzeRequest(BaseModel):
     file_paths: List[str]
     fields: List[str]
     save_path: Optional[str] = None
+    save_format: Optional[str] = "json"
 
 
 class ConfigRequest(BaseModel):
@@ -81,14 +83,33 @@ async def analyze(request: AnalyzeRequest):
             fields=request.fields
         )
 
-        # 如果指定了保存路径，保存 JSON 文件
+        # 如果指定了保存路径，保存文件
         if request.save_path and result:
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            file_name = f"extract_result_{timestamp}.json"
-            full_path = os.path.join(request.save_path, file_name)
+            save_format = request.save_format or "json"
 
-            with open(full_path, 'w', encoding='utf-8') as f:
-                json.dump(result, f, ensure_ascii=False, indent=2)
+            if save_format == "excel":
+                # 保存为 Excel 文件
+                file_name = f"extract_result_{timestamp}.xlsx"
+                full_path = os.path.join(request.save_path, file_name)
+
+                # 转换为 DataFrame
+                rows = []
+                for item in result.get("results", []):
+                    row = {"文件名": os.path.basename(item.get("file", ""))}
+                    for field in result.get("fields", []):
+                        row[field] = item.get("extracted", {}).get(field, "")
+                    rows.append(row)
+
+                df = pd.DataFrame(rows)
+                df.to_excel(full_path, index=False, engine='openpyxl')
+            else:
+                # 保存为 JSON 文件
+                file_name = f"extract_result_{timestamp}.json"
+                full_path = os.path.join(request.save_path, file_name)
+
+                with open(full_path, 'w', encoding='utf-8') as f:
+                    json.dump(result, f, ensure_ascii=False, indent=2)
 
             return AnalyzeResponse(
                 success=True,
