@@ -80,9 +80,14 @@ export const useAppStore = create<AppState>()(
   analyzeResult: null,
 
   addFiles: (files) =>
-    set((state) => ({
-      selectedFiles: [...state.selectedFiles, ...files],
-    })),
+    set((state) => {
+      // 基于路径去重
+      const existingPaths = new Set(state.selectedFiles.map((f) => f.path))
+      const newFiles = files.filter((f) => !existingPaths.has(f.path))
+      return {
+        selectedFiles: [...state.selectedFiles, ...newFiles],
+      }
+    }),
 
   removeFile: (id) =>
     set((state) => ({

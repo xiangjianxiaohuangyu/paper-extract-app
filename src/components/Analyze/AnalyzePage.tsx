@@ -1,13 +1,23 @@
-import { useState, useRef } from 'react'
-import { useAppStore } from '@/stores/appStore'
+import { useState } from 'react'
+import { useAppStore, FileItem } from '@/stores/appStore'
 import { analyzePdf } from '@/api'
 import TerminalPanel from '@/components/Terminal'
+
+// 声明 electronAPI 类型
+declare global {
+  interface Window {
+    electronAPI?: {
+      selectFiles: () => Promise<FileItem[]>
+      scanDirectory: (dirPath: string) => Promise<FileItem[]>
+      isDirectory: (filePath: string) => Promise<boolean>
+    }
+  }
+}
 
 // 默认提取字段
 const DEFAULT_FIELDS = ['title', 'authors', 'abstract', 'keywords']
 
 function AnalyzePage() {
-  const fileInputRef = useRef<HTMLInputElement>(null)
   const [isDragging, setIsDragging] = useState(false)
   const [extractFields, setExtractFields] = useState<string[]>(DEFAULT_FIELDS)
   const [newField, setNewField] = useState('')
@@ -23,25 +33,26 @@ function AnalyzePage() {
     setAnalyzeResult,
     terminalLogs,
     clearLogs,
+    appendLog,
   } = useAppStore()
 
-  // 处理文件选择
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files
-    if (!files) return
+  // 处理文件选择（使用 Electron API 支持文件夹）
+  const handleFileSelect = async () => {
+    if (!window.electronAPI) {
+      console.error('Electron API 不可用')
+      return
+    }
 
-    const fileItems = Array.from(files).map((file) => ({
-      id: Math.random().toString(36).substring(7),
-      name: file.name,
-      path: (file as any).path || file.name,
-      size: file.size,
-    }))
+    const files = await window.electronAPI.selectFiles()
 
-    addFiles(fileItems)
-
-    // 清空 input 以允许重复选择同一文件
-    if (fileInputRef.current) {
-      fileInputRef.current.value = ''
+    if (files.length > 0) {
+      const fileItems = files.map((file) => ({
+        id: Math.random().toString(36).substring(7),
+        name: file.name,
+        path: file.path,
+        size: file.size,
+      }))
+      addFiles(fileItems)
     }
   }
 
@@ -56,19 +67,66 @@ function AnalyzePage() {
     setIsDragging(false)
   }
 
-  const handleDrop = (e: React.DragEvent) => {
+  const handleDrop = async (e: React.DragEvent) => {
     e.preventDefault()
     setIsDragging(false)
 
     const files = e.dataTransfer.files
-    const fileItems = Array.from(files)
-      .filter((file) => file.name.toLowerCase().endsWith('.pdf'))
-      .map((file) => ({
-        id: Math.random().toString(36).substring(7),
-        name: file.name,
-        path: (file as any).path || file.name,
-        size: file.size,
-      }))
+    const fileItems: FileItem[] = []
+
+    appendLog('analyze', `window.electronAPI 存在: ${!!window.electronAPI}`)
+
+    // 检查是否支持 Electron API
+    if (window.electronAPI) {
+      const fileArray = Array.from(files)
+
+      for (const file of fileArray) {
+        const filePath = (file as any).path
+        appendLog('analyze', `拖拽文件: ${file.name}, 路径: ${filePath}`)
+
+        if (!filePath) continue
+
+        // 检查是否为文件夹
+        const isDir = await window.electronAPI.isDirectory(filePath)
+        appendLog('analyze', `是否是文件夹: ${isDir}`)
+
+        if (isDir) {
+          // 如果是文件夹，递归扫描其中的 PDF
+          appendLog('analyze', `扫描文件夹: ${filePath}`)
+          const pdfFiles = await window.electronAPI.scanDirectory(filePath)
+          appendLog('analyze', `找到 PDF 文件: ${pdfFiles.length} 个`)
+          fileItems.push(
+            ...pdfFiles.map((f) => ({
+              id: Math.random().toString(36).substring(7),
+              name: f.name,
+              path: f.path,
+              size: f.size,
+            }))
+          )
+        } else if (file.name.toLowerCase().endsWith('.pdf')) {
+          // 如果是 PDF 文件
+          fileItems.push({
+            id: Math.random().toString(36).substring(7),
+            name: file.name,
+            path: filePath,
+            size: file.size,
+          })
+        }
+      }
+    } else {
+      // 降级处理：不支持文件夹拖拽
+      const fallbackItems = Array.from(files)
+        .filter((file) => file.name.toLowerCase().endsWith('.pdf'))
+        .map((file) => ({
+          id: Math.random().toString(36).substring(7),
+          name: file.name,
+          path: (file as any).path || file.name,
+          size: file.size,
+        }))
+      fileItems.push(...fallbackItems)
+    }
+
+    appendLog('analyze', `最终添加文件数量: ${fileItems.length}`)
 
     if (fileItems.length > 0) {
       addFiles(fileItems)
@@ -77,7 +135,7 @@ function AnalyzePage() {
 
   // 点击选择文件
   const handleClickSelect = () => {
-    fileInputRef.current?.click()
+    handleFileSelect()
   }
 
   // 添加自定义字段
@@ -127,14 +185,6 @@ function AnalyzePage() {
         onDrop={handleDrop}
         onClick={handleClickSelect}
       >
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept=".pdf"
-          multiple
-          className="hidden"
-          onChange={handleFileSelect}
-        />
         <div className="text-gray-500">
           <p className="text-4xl mb-2">📄</p>
           <p className="text-lg font-medium">

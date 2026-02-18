@@ -5,14 +5,22 @@ const path = require('path')
 Menu.setApplicationMenu(null)
 
 function createWindow() {
+  const preloadPath = path.join(__dirname, 'preload.cjs')
+  console.log('Preload 路径:', preloadPath)
+
   const win = new BrowserWindow({
     width: 1200,
     height: 800,
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
+      sandbox: false,
+      preload: preloadPath,
     },
   })
+
+  // 默认打开 DevTools
+  win.webContents.openDevTools()
 
   // 加载 Vite 开发服务器或生产构建
   const isDev = process.env.NODE_ENV !== 'production'
