@@ -32,6 +32,8 @@ class AnalyzeRequest(BaseModel):
 class ConfigRequest(BaseModel):
     model_name: str
     api_key: str
+    config_name: str = "default"
+    provider: str = "qwen"
 
 
 class AnalyzeResponse(BaseModel):
@@ -95,7 +97,9 @@ async def save_config(request: ConfigRequest):
     try:
         success = await config_service.save_config(
             model_name=request.model_name,
-            api_key=request.api_key
+            api_key=request.api_key,
+            config_name=request.config_name,
+            provider=request.provider
         )
         if success:
             return ConfigResponse(
@@ -115,13 +119,13 @@ async def save_config(request: ConfigRequest):
 
 
 @app.get("/api/config/load")
-async def load_config():
+async def load_config(config_name: str = "default"):
     """
     加载配置接口
     调用 config_service.load_config() 加载已有配置
     """
     try:
-        config = await config_service.load_config()
+        config = await config_service.load_config(config_name)
         return {
             "success": True,
             "data": config
@@ -131,6 +135,78 @@ async def load_config():
             "success": False,
             "message": f"加载失败: {str(e)}"
         }
+
+
+@app.get("/api/config/list")
+async def list_configs():
+    """
+    获取配置列表接口
+    调用 config_service.get_all_configs() 获取所有已保存的配置
+    """
+    try:
+        configs = await config_service.get_all_configs()
+        return {
+            "success": True,
+            "data": configs
+        }
+    except Exception as e:
+        return {
+            "success": False,
+            "message": f"获取配置列表失败: {str(e)}"
+        }
+
+
+@app.get("/api/config/latest")
+async def get_latest_config():
+    """
+    获取最近使用的配置接口
+    调用 config_service.get_latest_config() 获取最近更新的配置
+    """
+    try:
+        config = await config_service.get_latest_config()
+        return {
+            "success": True,
+            "data": config
+        }
+    except Exception as e:
+        return {
+            "success": False,
+            "message": f"获取最近配置失败: {str(e)}"
+        }
+
+
+class DeleteConfigRequest(BaseModel):
+    config_name: str
+
+
+class DeleteConfigResponse(BaseModel):
+    success: bool
+    message: str = ""
+
+
+@app.post("/api/config/delete", response_model=DeleteConfigResponse)
+async def delete_config(request: DeleteConfigRequest):
+    """
+    删除配置接口
+    调用 config_service.delete_config() 删除指定配置
+    """
+    try:
+        success = await config_service.delete_config(request.config_name)
+        if success:
+            return DeleteConfigResponse(
+                success=True,
+                message="配置删除成功"
+            )
+        else:
+            return DeleteConfigResponse(
+                success=False,
+                message="配置删除失败"
+            )
+    except Exception as e:
+        return DeleteConfigResponse(
+            success=False,
+            message=f"删除失败: {str(e)}"
+        )
 
 
 @app.get("/api/env/check", response_model=EnvCheckResponse)

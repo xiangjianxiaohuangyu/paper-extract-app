@@ -68,14 +68,15 @@ export async function analyzePdf(filePaths: string[], fields: string[]) {
  * 保存配置
  * 对应后端 config_service.save_config()
  */
-export async function saveConfig(modelName: string, apiKey: string) {
+export async function saveConfig(modelName: string, apiKey: string, configName: string = '自定义名称', provider: string = 'qwen') {
   try {
     return await api.post('/config/save', {
       model_name: modelName,
       api_key: apiKey,
+      config_name: configName,
+      provider: provider,
     })
   } catch (error) {
-    // 后端未实现时返回 Mock 数据
     return {
       success: true,
       message: 'Mock: 配置保存成功',
@@ -87,17 +88,70 @@ export async function saveConfig(modelName: string, apiKey: string) {
  * 加载配置
  * 对应后端 config_service.load_config()
  */
-export async function loadConfig() {
+export async function loadConfig(configName: string = '自定义名称') {
   try {
-    return await api.get('/config/load')
+    return await api.get(`/config/load?config_name=${configName}`)
   } catch (error) {
-    // 后端未实现时返回默认配置
     return {
       success: true,
       data: {
+        config_name: '自定义名称',
+        provider: 'qwen',
         model_name: 'qwen-max',
         api_key: '',
       },
+    }
+  }
+}
+
+/**
+ * 获取配置列表
+ * 对应后端 config_service.get_all_configs()
+ */
+export async function getConfigList() {
+  try {
+    return await api.get('/config/list')
+  } catch (error) {
+    return {
+      success: true,
+      data: [],
+    }
+  }
+}
+
+/**
+ * 获取最近使用的配置
+ * 对应后端 config_service.get_latest_config()
+ */
+export async function getLatestConfig() {
+  try {
+    return await api.get('/config/latest')
+  } catch (error) {
+    return {
+      success: true,
+      data: {
+        config_name: '自定义名称',
+        provider: 'qwen',
+        model_name: 'qwen-max',
+        api_key: '',
+      },
+    }
+  }
+}
+
+/**
+ * 删除配置
+ * 对应后端 config_service.delete_config()
+ */
+export async function deleteConfig(configName: string) {
+  try {
+    return await api.post('/config/delete', {
+      config_name: configName,
+    })
+  } catch (error) {
+    return {
+      success: true,
+      message: 'Mock: 配置删除成功',
     }
   }
 }

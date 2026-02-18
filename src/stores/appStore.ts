@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { persist } from 'zustand/middleware'
 
 // 文件类型定义
 export interface FileItem {
@@ -12,6 +13,8 @@ export interface FileItem {
 export interface AppConfig {
   model_name: string
   api_key: string
+  config_name?: string
+  provider?: string
 }
 
 // 环境检测结果类型
@@ -68,7 +71,9 @@ interface AppState {
   clearLogs: (module: ModuleType) => void
 }
 
-export const useAppStore = create<AppState>((set) => ({
+export const useAppStore = create<AppState>()(
+  persist(
+    (set) => ({
   // 文章解析相关状态
   selectedFiles: [],
   isAnalyzing: false,
@@ -92,6 +97,8 @@ export const useAppStore = create<AppState>((set) => ({
 
   // 配置相关状态
   config: {
+    config_name: '自定义名称',
+    provider: 'qwen',
     model_name: 'qwen-max',
     api_key: '',
   },
@@ -131,4 +138,11 @@ export const useAppStore = create<AppState>((set) => ({
         [module]: [],
       },
     })),
-}))
+}), {
+      name: 'paper-extract-storage',
+      partialize: (state) => ({
+        config: state.config,
+      }),
+    }
+  )
+)
