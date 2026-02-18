@@ -3,8 +3,94 @@
 负责整合 PDF 解析、分块、字段提取、结果汇总的完整流程
 """
 from typing import List, Dict
+import tiktoken
 from . import pdf_parser, llm_service
 from .log_service import push_log
+
+# Token 预估函数
+def estimate_tokens(text: str) -> int:
+    """
+    预估文本的 token 数量
+    使用 tiktoken 库进行精确估算（cl100k_base 编码）
+
+    Args:
+        text: 待预估的文本
+
+    Returns:
+        预估的 token 数量
+    """
+    if not text:
+        return 0
+
+    try:
+        # 使用 cl100k_base 编码（GPT-4/3.5 使用）
+        enc = tiktoken.get_encoding("cl100k_base")
+        return len(enc.encode(text))
+    except Exception:
+        # 如果 tiktoken 失败，使用备用估算方法
+        return len(text) // 2
+
+
+def estimate_cost(input_tokens: int, output_tokens: int = 1000, model_name: str = "qwen-max") -> str:
+    """
+    预估 API 调用费用
+
+    Args:
+        input_tokens: 输入 token 数量
+        output_tokens: 输出 token 数量
+        model_name: 模型名称
+
+    Returns:
+        费用估算字符串
+    """
+    # 千问模型价格（单位：元/百万 token）
+    # qwen-max: 输入 0.02 元/万 token，输出 0.06 元/万 token
+    prices = {
+        "qwen-max": (2.0, 6.0),  # (输入价格, 输出价格) 单位：元/百万
+        "qwen-plus": (1.0, 3.0),
+        "qwen-turbo": (0.5, 1.5),
+    }
+
+    price = prices.get(model_name, (1.0, 3.0))
+    input_cost = input_tokens / 1_000_000 * price[0]
+    output_cost = output_tokens / 1_000_000 * price[1]
+    total_cost = input_cost + output_cost
+
+    return f"约 {total_cost:.4f} 元"
+
+
+async def estimate_and_log_tokens(content: str, fields: List[str], model_name: str = "qwen-max") -> tuple:
+    """
+    预估 token 数量和费用
+
+    Args:
+        content: PDF 文本内容
+        fields: 需要提取的字段列表
+        model_name: 模型名称
+
+    Returns:
+        (input_tokens, estimated_cost): token 数量和费用字符串
+    """
+    # 构建 prompt（与 llm_service.extract_fields 保持一致）
+    fields_str = ", ".join(fields)
+    prompt = f"""请从以下论文内容中提取指定字段：{fields_str}
+
+请严格按照以下 JSON 格式返回，不要包含其他内容：
+{{
+    "字段名": "提取的内容",
+    ...
+}}
+
+如果某个字段不存在，请返回空字符串。
+
+论文内容：
+{content[:150000]}
+"""
+    input_tokens = estimate_tokens(prompt)
+    estimated_cost = estimate_cost(input_tokens, model_name=model_name)
+
+    return input_tokens, estimated_cost
+
 
 async def run_pipeline(file_paths: List[str], fields: List[str]) -> Dict:
     """
@@ -36,17 +122,21 @@ async def run_pipeline(file_paths: List[str], fields: List[str]) -> Dict:
         content = pdf_parser.parse_pdf(file_path)
         await push_log("analyze", f"PDF 解析完成，内容长度: {len(content) if content else 0} 字符")
 
-        # Step 2: 字段提取
-        await push_log("analyze", "正在调用模型提取字段...")
-        extracted = llm_service.extract_fields(content, fields)
-        await push_log("analyze", "字段提取完成")
+        # Step 2: 预估 token 和费用
+        input_tokens, estimated_cost = await estimate_and_log_tokens(content, fields)
+        await push_log("analyze", f"预估输入 token: {input_tokens}，预估费用: {estimated_cost}")
 
-        all_results.append({
-            "file": file_path,
-            "extracted": extracted
-        })
+    #     # Step 3: 字段提取
+    #     await push_log("analyze", "正在调用模型提取字段...")
+    #     extracted = llm_service.extract_fields(content, fields)
+    #     await push_log("analyze", "字段提取完成")
 
-    await push_log("analyze", f"解析完成，共处理 {len(all_results)} 个文件")
+    #     all_results.append({
+    #         "file": file_path,
+    #         "extracted": extracted
+    #     })
+
+    # await push_log("analyze", f"解析完成，共处理 {len(all_results)} 个文件")
 
     return {
         "total_files": len(file_paths),
