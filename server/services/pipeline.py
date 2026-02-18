@@ -36,17 +36,17 @@ async def run_pipeline(file_paths: List[str], fields: List[str]) -> Dict:
         content = pdf_parser.parse_pdf(file_path)
         await push_log("analyze", f"PDF 解析完成，内容长度: {len(content) if content else 0} 字符")
 
-    #     # Step 2: 字段提取（不分块，直接对整个内容提取）
-    #     await push_log("analyze", "正在调用模型提取字段...")
-    #     extracted = llm_service.extract_fields(content, fields)
-    #     await push_log("analyze", "字段提取完成")
+        # Step 2: 字段提取
+        await push_log("analyze", "正在调用模型提取字段...")
+        extracted = llm_service.extract_fields(content, fields)
+        await push_log("analyze", "字段提取完成")
 
-    #     all_results.append({
-    #         "file": file_path,
-    #         "extracted": extracted
-    #     })
+        all_results.append({
+            "file": file_path,
+            "extracted": extracted
+        })
 
-    # await push_log("analyze", f"解析完成，共处理 {len(all_results)} 个文件")
+    await push_log("analyze", f"解析完成，共处理 {len(all_results)} 个文件")
 
     return {
         "total_files": len(file_paths),
