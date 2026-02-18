@@ -35,11 +35,12 @@ api.interceptors.response.use(
  * 分析 PDF 文件
  * 对应后端 pipeline.run_pipeline()
  */
-export async function analyzePdf(filePaths: string[], fields: string[]) {
+export async function analyzePdf(filePaths: string[], fields: string[], savePath?: string) {
   try {
     return await api.post('/analyze', {
       file_paths: filePaths,
       fields: fields,
+      save_path: savePath || null,
     })
   } catch (error) {
     // 后端未实现时返回 Mock 数据

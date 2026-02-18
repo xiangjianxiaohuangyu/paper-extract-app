@@ -33,8 +33,7 @@ function scanDirectory(dirPath) {
 contextBridge.exposeInMainWorld('electronAPI', {
   // 打开文件/文件夹选择对话框
   selectFiles: async () => {
-    const { dialog } = require('electron')
-    const result = await dialog.showOpenDialog({
+    const result = await ipcRenderer.invoke('dialog:openFile', {
       properties: [
         'openFile',
         'openDirectory',
@@ -82,5 +81,16 @@ contextBridge.exposeInMainWorld('electronAPI', {
     } catch {
       return false
     }
+  },
+
+  // 选择目录
+  selectDirectory: async () => {
+    const result = await ipcRenderer.invoke('dialog:openDirectory')
+
+    if (result.canceled || result.filePaths.length === 0) {
+      return null
+    }
+
+    return result.filePaths[0]
   },
 })

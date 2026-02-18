@@ -55,6 +55,7 @@ function ConfigPage() {
 
   // 页面初始化时加载配置
   useEffect(() => {
+    let isMounted = true
     const fetchConfig = async () => {
       // 如果本地存储已有配置，直接使用
       if (config.api_key) {
@@ -69,7 +70,7 @@ function ConfigPage() {
       // 否则从后端获取最近配置
       try {
         const result = await getLatestConfig() as { success: boolean; data?: any }
-        if (result.success && result.data) {
+        if (result.success && result.data && isMounted) {
           const data = result.data
           // 优先使用 provider 字段，否则通过 model_name 推断
           if (data.provider) {
@@ -86,10 +87,13 @@ function ConfigPage() {
       } catch (error) {
         console.error('加载配置失败:', error)
       }
-      setIsInitialized(true)
+      if (isMounted) {
+        setIsInitialized(true)
+      }
     }
     fetchConfig()
-  }, [config, setConfig])
+    return () => { isMounted = false }
+  }, [])
 
   // 获取已保存的配置列表
   const fetchSavedConfigs = async () => {

@@ -75,6 +75,15 @@ def extract_fields(content: str, fields: List[str], model_name: str = "qwen-max"
 
     raw_response = ""  # 初始化原始响应
 
+    # 检查 API Key 是否为空
+    if not api_key:
+        print("[ERROR] API Key 为空")
+        return {
+            "parsed": {field: "" for field in fields},
+            "raw": "",
+            "error": "API Key 为空，请在配置页面设置 API Key"
+        }
+
     try:
         # 调用 LLM
         raw_response = call_llm(prompt, model_name, api_key)

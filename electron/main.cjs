@@ -1,8 +1,19 @@
-const { app, BrowserWindow, Menu } = require('electron')
+const { app, BrowserWindow, Menu, ipcMain, dialog } = require('electron')
 const path = require('path')
 
 // 移除应用程序菜单
 Menu.setApplicationMenu(null)
+
+// 注册 IPC 处理器
+ipcMain.handle('dialog:openFile', async (event, options) => {
+  return await dialog.showOpenDialog(options)
+})
+
+ipcMain.handle('dialog:openDirectory', async (event) => {
+  return await dialog.showOpenDialog({
+    properties: ['openDirectory'],
+  })
+})
 
 function createWindow() {
   const preloadPath = path.join(__dirname, 'preload.cjs')

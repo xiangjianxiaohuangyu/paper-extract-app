@@ -10,6 +10,7 @@ declare global {
       selectFiles: () => Promise<FileItem[]>
       scanDirectory: (dirPath: string) => Promise<FileItem[]>
       isDirectory: (filePath: string) => Promise<boolean>
+      selectDirectory: () => Promise<string | null>
     }
   }
 }
@@ -17,6 +18,7 @@ declare global {
 function AnalyzePage() {
   const [isDragging, setIsDragging] = useState(false)
   const [newField, setNewField] = useState('')
+  const [savePath, setSavePath] = useState('')
 
   const {
     selectedFiles,
@@ -149,13 +151,44 @@ function AnalyzePage() {
 
     try {
       const filePaths = selectedFiles.map((f) => f.path)
-      const result = await analyzePdf(filePaths, extractFields)
+      const result = await analyzePdf(filePaths, extractFields, savePath || undefined)
       setAnalyzeResult(result)
     } catch (error) {
       console.error('解析失败:', error)
     } finally {
       setAnalyzing(false)
     }
+  }
+
+  // 选择保存目录
+  const handleSelectSavePath = () => {
+    console.log('点击选择目录按钮', window.electronAPI)
+
+    // 优先使用 Electron API
+    if (window.electronAPI && window.electronAPI.selectDirectory) {
+      console.log('使用 Electron API')
+      window.electronAPI.selectDirectory().then((dirPath: string | null) => {
+        console.log('选择的路径:', dirPath)
+        if (dirPath) {
+          setSavePath(dirPath)
+        }
+      })
+      return
+    }
+
+    console.log('使用浏览器降级处理')
+    // 降级处理：使用原生 input 元素
+    const input = document.createElement('input')
+    input.type = 'file'
+    input.webkitdirectory = true
+    input.onchange = (e) => {
+      const files = (e.target as HTMLInputElement).files
+      if (files && files.length > 0) {
+        // 由于浏览器安全限制，无法获取完整路径，这里使用提示
+        setSavePath('已选择文件夹（请在保存路径中查看）')
+      }
+    }
+    input.click()
   }
 
   return (
@@ -253,12 +286,33 @@ function AnalyzePage() {
         </div>
       </div>
 
+      {/* 保存路径设置 */}
+      <div className="mb-6">
+        <h3 className="text-lg font-medium text-gray-700 mb-3">保存路径</h3>
+        <div className="flex gap-2">
+          <input
+            type="text"
+            value={savePath}
+            readOnly
+            placeholder="请选择保存目录"
+            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg bg-gray-50"
+          />
+          <button
+            type="button"
+            onClick={handleSelectSavePath}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 cursor-pointer"
+          >
+            选择目录
+          </button>
+        </div>
+      </div>
+
       {/* 开始解析按钮 */}
       <button
         onClick={handleAnalyze}
-        disabled={selectedFiles.length === 0 || isAnalyzing}
+        disabled={selectedFiles.length === 0 || isAnalyzing || !savePath}
         className={`w-full py-3 rounded-lg font-medium transition-colors ${
-          selectedFiles.length === 0 || isAnalyzing
+          selectedFiles.length === 0 || isAnalyzing || !savePath
             ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
             : 'bg-blue-600 text-white hover:bg-blue-700'
         }`}
@@ -266,13 +320,13 @@ function AnalyzePage() {
         {isAnalyzing ? '解析中...' : '开始解析'}
       </button>
 
-      {/* 解析结果展示 */}
-      {analyzeResult && (
-        <div className="mt-6 bg-white border border-gray-200 rounded-lg p-4">
-          <h3 className="text-lg font-medium text-gray-700 mb-3">解析结果</h3>
-          <pre className="bg-gray-50 p-4 rounded-lg overflow-auto text-sm">
-            {JSON.stringify(analyzeResult, null, 2)}
-          </pre>
+      {/* 解析结果提示 */}
+      {analyzeResult && analyzeResult.success && (
+        <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+          <p className="text-green-700 font-medium">解析完成</p>
+          {analyzeResult.message && analyzeResult.message.includes('已保存至') && (
+            <p className="text-green-600 text-sm mt-1">{analyzeResult.message}</p>
+          )}
         </div>
       )}
 

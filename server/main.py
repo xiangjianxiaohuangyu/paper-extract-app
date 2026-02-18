@@ -7,6 +7,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi import WebSocket, WebSocketDisconnect
 from pydantic import BaseModel
 from typing import List, Optional
+import json
+import os
+from datetime import datetime
 
 from services import pipeline, config_service, env_service
 from services.log_service import manager
@@ -27,6 +30,7 @@ app.add_middleware(
 class AnalyzeRequest(BaseModel):
     file_paths: List[str]
     fields: List[str]
+    save_path: Optional[str] = None
 
 
 class ConfigRequest(BaseModel):
@@ -76,6 +80,22 @@ async def analyze(request: AnalyzeRequest):
             file_paths=request.file_paths,
             fields=request.fields
         )
+
+        # 如果指定了保存路径，保存 JSON 文件
+        if request.save_path and result:
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            file_name = f"extract_result_{timestamp}.json"
+            full_path = os.path.join(request.save_path, file_name)
+
+            with open(full_path, 'w', encoding='utf-8') as f:
+                json.dump(result, f, ensure_ascii=False, indent=2)
+
+            return AnalyzeResponse(
+                success=True,
+                message=f"解析完成，已保存至: {full_path}",
+                data=result
+            )
+
         return AnalyzeResponse(
             success=True,
             message="解析完成",
