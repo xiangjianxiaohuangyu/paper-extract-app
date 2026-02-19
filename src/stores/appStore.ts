@@ -44,10 +44,14 @@ interface AppState {
   // 文章解析相关
   selectedFiles: FileItem[]
   extractFields: string[]
+  savePath: string
+  saveFormat: string
   isAnalyzing: boolean
   analyzeResult: any | null
   addFiles: (files: FileItem[]) => void
   setExtractFields: (fields: string[]) => void
+  setSavePath: (path: string) => void
+  setSaveFormat: (format: string) => void
   removeFile: (id: string) => void
   clearFiles: () => void
   setAnalyzing: (analyzing: boolean) => void
@@ -79,10 +83,16 @@ export const useAppStore = create<AppState>()(
   // 文章解析相关状态
   selectedFiles: [],
   extractFields: ['题目', '创新点', '主要内容', '解决的问题'],
+  savePath: '',
+  saveFormat: 'json',
   isAnalyzing: false,
   analyzeResult: null,
 
   setExtractFields: (fields) => set({ extractFields: fields }),
+
+  setSavePath: (path) => set({ savePath: path }),
+
+  setSaveFormat: (format) => set({ saveFormat: format }),
 
   addFiles: (files) =>
     set((state) => {
@@ -153,6 +163,8 @@ export const useAppStore = create<AppState>()(
       partialize: (state) => ({
         config: state.config,
         extractFields: state.extractFields,
+        savePath: state.savePath,
+        saveFormat: state.saveFormat,
       }),
     }
   )

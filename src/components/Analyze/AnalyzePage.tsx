@@ -18,13 +18,15 @@ declare global {
 function AnalyzePage() {
   const [isDragging, setIsDragging] = useState(false)
   const [newField, setNewField] = useState('')
-  const [savePath, setSavePath] = useState('')
-  const [saveFormat, setSaveFormat] = useState('json')
 
   const {
     selectedFiles,
     extractFields,
     setExtractFields,
+    savePath,
+    setSavePath,
+    saveFormat,
+    setSaveFormat,
     addFiles,
     removeFile,
     clearFiles,
