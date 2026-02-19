@@ -10,6 +10,8 @@
     "dev:server": "python server/run.py",
     "dev:electron": "wait-on http://localhost:5173 && wait-on http://localhost:8000 && npx electron .",
     "build": "vite build",
+    "build:server": "cd server && pyinstaller server.spec --workpath ../dist/server_build --distpath ../dist/server",
+    "build:all": "npm run build && npm run build:server && electron-builder",
     "build:electron": "npm run build && electron-builder",
     "preview": "vite preview",
     "electron:dev": "npx electron .",
@@ -24,12 +26,11 @@
     "files": [
       "dist/**/*",
       "electron/**/*",
-      "server/**/*",
       "package.json"
     ],
     "extraResources": [
       {
-        "from": "server",
+        "from": "dist/server",
         "to": "server"
       }
     ],
@@ -41,6 +42,10 @@
         }
       ]
     },
+    "asar": true,
+    "asarUnpack": [
+      "dist/server/**/*"
+    ],
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,

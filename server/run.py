@@ -11,4 +11,7 @@ os.environ['PYTHONPATH'] = server_dir
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+    from main import app
+
+    # 生产模式不使用 reload
+    uvicorn.run(app, host="0.0.0.0", port=8000)

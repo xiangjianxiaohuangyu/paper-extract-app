@@ -1,7 +1,7 @@
 import axios from 'axios'
 
 const api = axios.create({
-  baseURL: '/api',
+  baseURL: typeof __API_BASE_URL__ !== 'undefined' ? __API_BASE_URL__ : '/api',
   timeout: 60000,
   headers: {
     'Content-Type': 'application/json',
@@ -36,15 +36,22 @@ api.interceptors.response.use(
  * 对应后端 pipeline.run_pipeline()
  */
 export async function analyzePdf(filePaths: string[], fields: string[], savePath?: string, saveFormat?: string) {
+  console.log('[API] analyzePdf 调用', { filePaths, fields, savePath, saveFormat })
+  console.log('[API] baseURL:', api.defaults.baseURL)
+
   try {
-    return await api.post('/analyze', {
+    console.log('[API] 发送请求到 /analyze...')
+    const result = await api.post('/analyze', {
       file_paths: filePaths,
       fields: fields,
       save_path: savePath || null,
       save_format: saveFormat || 'json',
     })
+    console.log('[API] 请求成功:', result)
+    return result
   } catch (error) {
     // 后端未实现时返回 Mock 数据
+    console.error('[API] 请求失败，使用 Mock 数据:', error)
     return {
       success: true,
       message: 'Mock: 解析完成',

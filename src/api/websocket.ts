@@ -4,7 +4,9 @@ let ws: WebSocket | null = null
 let reconnectTimer: NodeJS.Timeout | null = null
 let isConnecting = false
 
-const WS_URL = 'ws://localhost:8000/ws/logs'
+// WebSocket 必须使用绝对地址
+// 开发模式下 /api 无法用于 WebSocket，直接使用后端地址
+const WS_URL = 'ws://127.0.0.1:8000/ws/logs'
 
 export function connectWebSocket(): void {
   if (isConnecting || (ws && ws.readyState === WebSocket.OPEN)) {
