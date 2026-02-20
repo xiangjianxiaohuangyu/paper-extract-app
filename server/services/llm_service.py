@@ -40,7 +40,7 @@ def split_by_tokens(text: str, max_tokens: int = 3000, overlap: int = 300) -> Li
     return chunks
 
 
-def extract_from_chunk(chunk: str, fields: List[str], model_name: str, api_key: str) -> Dict:
+def extract_from_chunk(chunk: str, fields: List[str], model_name: str, api_key: str, base_url: str = "") -> Dict:
     """
     Map 阶段：从单个文本块中提取字段
 
@@ -49,10 +49,12 @@ def extract_from_chunk(chunk: str, fields: List[str], model_name: str, api_key: 
         fields: 需要提取的字段列表
         model_name: 模型名称
         api_key: API 密钥
+        base_url: API 端点 URL
 
     Returns:
         提取结果字典
     """
+    
     fields_str = ", ".join(fields)
 
     prompt = f"""请从以下论文片段中提取字段：{fields_str}
@@ -64,7 +66,8 @@ def extract_from_chunk(chunk: str, fields: List[str], model_name: str, api_key: 
 """
 
     try:
-        raw = call_llm(prompt, model_name, api_key)
+
+        raw = call_llm(prompt, model_name, api_key, base_url)
         print(f"[extract_from_chunk] 块原始返回: {raw[:500]}...")
 
         # 解析 JSON 响应
@@ -77,10 +80,12 @@ def extract_from_chunk(chunk: str, fields: List[str], model_name: str, api_key: 
         return json.loads(response.strip())
     except Exception as e:
         print(f"[extract_from_chunk] 解析失败: {e}")
-        return {field: "" for field in fields}
+        result = {field: "" for field in fields}
+        result["error"] = str(e)
+        return result
 
 
-def merge_results(results: List[Dict], fields: List[str], model_name: str, api_key: str) -> Dict:
+def merge_results(results: List[Dict], fields: List[str], model_name: str, api_key: str, base_url: str = "") -> Dict:
     """
     Reduce 阶段：合并多个文本块的提取结果
 
@@ -89,6 +94,7 @@ def merge_results(results: List[Dict], fields: List[str], model_name: str, api_k
         fields: 需要提取的字段列表
         model_name: 模型名称
         api_key: API 密钥
+        base_url: API 端点 URL
 
     Returns:
         合并后的最终结果
@@ -117,7 +123,7 @@ def merge_results(results: List[Dict], fields: List[str], model_name: str, api_k
 """
 
     try:
-        raw = call_llm(prompt, model_name, api_key)
+        raw = call_llm(prompt, model_name, api_key, base_url)
         print(f"[merge_results] 合并原始返回: {raw[:500]}...")
 
         # 解析 JSON 响应
@@ -142,29 +148,21 @@ def merge_results(results: List[Dict], fields: List[str], model_name: str, api_k
         return fallback
 
 
-def extract_fields_advanced(content: str, fields: List[str], model_name: str = "qwen-max", api_key: str = "") -> Dict:
+def extract_fields_advanced(content: str, fields: List[str], model_name: str, api_key: str, base_url: str) -> Dict:
     """
     高级字段提取：Token-aware 分块 + Map-Reduce
 
     Args:
         content: 完整的文本内容
         fields: 需要提取的字段列表
-        model_name: 模型名称，默认 qwen-max
+        model_name: 模型名称
         api_key: API 密钥
+        base_url: API 端点 URL
 
     Returns:
         提取结果字典（包含 parsed 和 raw 字段）
     """
-    # 检查 API Key 是否为空
-    if not api_key:
-        print("[ERROR] API Key 为空")
-        return {
-            "parsed": {field: "" for field in fields},
-            "raw": "",
-            "error": "API Key 为空，请在配置页面设置 API Key"
-        }
-
-    print(f"[extract_fields_advanced] 开始处理，内容长度: {len(content)} 字符")
+    print(f"[extract_fields_advanced] 开始处理，内容长度: {len(content)} 字符", flush=True)
 
     # 1. Token-aware 分块
     chunks = split_by_tokens(content, max_tokens=3000, overlap=300)
@@ -174,20 +172,36 @@ def extract_fields_advanced(content: str, fields: List[str], model_name: str = "
     partial_results = []
     for i, chunk in enumerate(chunks):
         print(f"[extract_fields_advanced] 处理块 {i+1}/{len(chunks)}")
-        result = extract_from_chunk(chunk, fields, model_name, api_key)
+        result = extract_from_chunk(chunk, fields, model_name, api_key, base_url)
+
+        # 检查是否有错误
+        if result.get("error"):
+            return {
+                "parsed": {field: "" for field in fields},
+                "raw": json.dumps(partial_results, ensure_ascii=False),
+                "error": result.get("error")
+            }
+
         partial_results.append(result)
 
     # 3. Reduce 阶段：合并结果
     print(f"[extract_fields_advanced] 开始合并 {len(partial_results)} 个结果")
-    final_result = merge_results(partial_results, fields, model_name, api_key)
+    try:
+        final_result = merge_results(partial_results, fields, model_name, api_key, base_url)
+        return {
+            "parsed": final_result,
+            "raw": json.dumps(partial_results, ensure_ascii=False)
+        }
+    except Exception as e:
+        print(f"[extract_fields_advanced] 合并失败: {e}")
+        return {
+            "parsed": {field: "" for field in fields},
+            "raw": json.dumps(partial_results, ensure_ascii=False),
+            "error": str(e)
+        }
 
-    return {
-        "parsed": final_result,
-        "raw": json.dumps(partial_results, ensure_ascii=False)
-    }
 
-
-def call_llm(prompt: str, model_name: str = "qwen-max", api_key: str = "") -> str:
+def call_llm(prompt: str, model_name: str = "qwen-max", api_key: str = "", base_url: str = "") -> str:
     """
     调用 LLM API
 
@@ -195,6 +209,7 @@ def call_llm(prompt: str, model_name: str = "qwen-max", api_key: str = "") -> st
         prompt: 提示词
         model_name: 模型名称，默认 qwen-max
         api_key: API 密钥
+        base_url: API 端点 URL
 
     Returns:
         LLM 返回的文本
@@ -204,13 +219,17 @@ def call_llm(prompt: str, model_name: str = "qwen-max", api_key: str = "") -> st
     if not api_key:
         raise ValueError("API Key 不能为空")
 
+    if not base_url:
+        raise ValueError("base_url 不能为空，请在配置中设置 API 端点")
+
+    print(f"[call_llm] 使用 base_url: {base_url}")
+
     try:
-        # 使用 langchain-openai 兼容千问 API
-        # 千问 API 兼容 OpenAI 接口
+        # 使用 langchain-openai 兼容各种 OpenAI 兼容 API
         llm = ChatOpenAI(
             model=model_name,
             api_key=api_key,
-            base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
+            base_url=base_url,
             temperature=0.1
         )
 

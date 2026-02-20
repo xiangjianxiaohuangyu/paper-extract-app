@@ -3,6 +3,7 @@
 负责 WebSocket 连接管理与日志推送
 """
 print(">>> import log_service...")
+import asyncio
 from fastapi import WebSocket
 from typing import List
 
@@ -25,11 +26,25 @@ class ConnectionManager:
 
     async def broadcast(self, message: dict):
         """广播消息到所有连接"""
-        for connection in self.active_connections:
+        # 无连接时直接返回
+        if not self.active_connections:
+            return
+
+        # 复制列表避免遍历时修改
+        connections = self.active_connections.copy()
+
+        for connection in connections:
             try:
-                await connection.send_json(message)
+                # 添加超时，避免无限等待
+                await asyncio.wait_for(
+                    connection.send_json(message),
+                    timeout=1.0
+                )
+            except asyncio.TimeoutError:
+                print("[log_service] 发送超时，断开连接")
+                self.disconnect(connection)
             except Exception:
-                # 连接已断开，移除
+                print("[log_service] 发送失败，断开连接")
                 self.disconnect(connection)
 
 
@@ -45,7 +60,10 @@ async def push_log(module: str, message: str) -> None:
         module: 模块名称 ("analyze" | "config" | "env")
         message: 日志消息
     """
-    await manager.broadcast({
-        "module": module,
-        "message": message
-    })
+    try:
+        await manager.broadcast({
+            "module": module,
+            "message": message
+        })
+    except Exception as e:
+        print(f"[log_service] push_log 异常: {e}")

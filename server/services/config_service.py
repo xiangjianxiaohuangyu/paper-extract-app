@@ -48,7 +48,7 @@ def save_all_configs_to_file(configs: List[Dict]) -> bool:
         return False
 
 
-async def save_config(model_name: str, api_key: str, config_name: str = "自定义名称", provider: str = "qwen") -> bool:
+async def save_config(model_name: str, api_key: str, config_name: str = "自定义名称", provider: str = "qwen", base_url: str = "") -> bool:
     """
     保存配置到文件
 
@@ -57,12 +57,11 @@ async def save_config(model_name: str, api_key: str, config_name: str = "自定�
         api_key: API 密钥
         config_name: 配置名称（用于区分不同配置）
         provider: 模型供应商
+        base_url: API 端点 URL（自定义供应商时使用）
 
     Returns:
         是否保存成功
     """
-    await push_log("config", f"开始保存配置 (模型: {model_name}, 名称: {config_name})...")
-
     try:
         configs = get_all_configs_from_file()
 
@@ -83,6 +82,7 @@ async def save_config(model_name: str, api_key: str, config_name: str = "自定�
             "provider": provider,
             "model_name": model_name,
             "api_key": api_key,
+            "base_url": base_url,
             "updated_at": datetime.now().isoformat()
         }
 
@@ -104,7 +104,7 @@ async def save_config(model_name: str, api_key: str, config_name: str = "自定�
 
 async def load_config(config_name: str = "自定义名称") -> Dict:
     """
-    加载配置文件
+    加载配置文件，并更新其 updated_at 时间戳
 
     Args:
         config_name: 配置名称
@@ -122,10 +122,13 @@ async def load_config(config_name: str = "自定义名称") -> Dict:
         if not safe_name:
             safe_name = "自定义名称"
 
-        for cfg in configs:
+        for i, cfg in enumerate(configs):
             if cfg.get('config_name') == safe_name:
+                # 更新 updated_at 时间戳
+                configs[i]['updated_at'] = datetime.now().isoformat()
+                save_all_configs_to_file(configs)
                 await push_log("config", "配置加载成功")
-                return cfg
+                return configs[i]
 
         # 未找到配置，返回默认配置
         await push_log("config", f"配置 {config_name} 不存在，使用默认配置")

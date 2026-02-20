@@ -54,6 +54,7 @@ class ConfigRequest(BaseModel):
     api_key: str
     config_name: str = "default"
     provider: str = "qwen"
+    base_url: str = ""
 
 
 class AnalyzeResponse(BaseModel):
@@ -96,6 +97,14 @@ async def analyze(request: AnalyzeRequest):
             file_paths=request.file_paths,
             fields=request.fields
         )
+
+        # 检查是否有错误
+        if result.get("error"):
+            return AnalyzeResponse(
+                success=False,
+                message=f"解析失败: {result.get('error')}",
+                data=result
+            )
 
         # 如果指定了保存路径，保存文件
         if request.save_path and result:
@@ -154,7 +163,8 @@ async def save_config(request: ConfigRequest):
             model_name=request.model_name,
             api_key=request.api_key,
             config_name=request.config_name,
-            provider=request.provider
+            provider=request.provider,
+            base_url=request.base_url
         )
         if success:
             return ConfigResponse(

@@ -73,13 +73,14 @@ export async function analyzePdf(filePaths: string[], fields: string[], savePath
  * 保存配置
  * 对应后端 config_service.save_config()
  */
-export async function saveConfig(modelName: string, apiKey: string, configName: string = '自定义名称', provider: string = 'qwen') {
+export async function saveConfig(modelName: string, apiKey: string, configName: string = '自定义名称', provider: string = 'qwen', baseUrl: string = '') {
   try {
     return await api.post('/config/save', {
       model_name: modelName,
       api_key: apiKey,
       config_name: configName,
       provider: provider,
+      base_url: baseUrl,
     })
   } catch (error) {
     return {

@@ -354,12 +354,22 @@ function AnalyzePage() {
         {isAnalyzing ? '解析中...' : '开始解析'}
       </button>
 
-      {/* 解析结果提示 */}
+      {/* 解析结果提示 - 成功 */}
       {analyzeResult && analyzeResult.success && (
         <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
           <p className="text-green-700 font-medium">解析完成</p>
           {analyzeResult.message && analyzeResult.message.includes('已保存至') && (
             <p className="text-green-600 text-sm mt-1">{analyzeResult.message}</p>
+          )}
+        </div>
+      )}
+
+      {/* 解析结果提示 - 失败 */}
+      {analyzeResult && !analyzeResult.success && (
+        <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+          <p className="text-red-700 font-medium">解析失败</p>
+          {analyzeResult.message && (
+            <p className="text-red-600 text-sm mt-1">{analyzeResult.message}</p>
           )}
         </div>
       )}

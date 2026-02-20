@@ -61,7 +61,7 @@ function startServer() {
 
     serverProcess = spawn(serverExePath, [], {
       cwd: path.dirname(serverExePath),
-      windowsHide: false,
+      windowsHide: true,
     })
 
     // 监听 stdout
@@ -104,7 +104,7 @@ function createWindow() {
 
   win.webContents.openDevTools()
 
-
+  
   // // 开发模式打开 DevTools
   // if (isDev) {
   //   win.webContents.openDevTools()

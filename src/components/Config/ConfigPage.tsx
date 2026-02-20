@@ -7,6 +7,7 @@ import TerminalPanel from '@/components/Terminal'
 const PROVIDERS = [
   { value: 'qwen', label: '通义千问 (Qwen)' },
   { value: 'openai', label: 'OpenAI' },
+  { value: 'other', label: '其他 (自定义 API)' },
 ]
 
 const QWEN_MODELS = [
@@ -32,26 +33,35 @@ interface SavedConfig {
 
 function ConfigPage() {
   const { config, setConfig, terminalLogs, clearLogs } = useAppStore()
-  const [provider, setProvider] = useState<'qwen' | 'openai'>(config.provider as 'qwen' | 'openai' || 'qwen')
+  const [provider, setProvider] = useState<'qwen' | 'openai' | 'other'>(config.provider as 'qwen' | 'openai' | 'other' || 'qwen')
   const [modelName, setModelName] = useState(config.model_name || 'qwen-max')
   const [apiKey, setApiKey] = useState(config.api_key || '')
   const [configName, setConfigName] = useState(config.config_name || '自定义名称')
+  const [baseUrl, setBaseUrl] = useState(config.base_url || '')
   const [isSaving, setIsSaving] = useState(false)
   const [saveMessage, setSaveMessage] = useState('')
   const [showImportModal, setShowImportModal] = useState(false)
+  const [showConfirmModal, setShowConfirmModal] = useState(false)
   const [savedConfigs, setSavedConfigs] = useState<SavedConfig[]>([])
   const [isInitialized, setIsInitialized] = useState(false)
 
   // 根据供应商获取模型列表
   const getModels = () => {
-    return provider === 'qwen' ? QWEN_MODELS : OPENAI_MODELS
+    if (provider === 'qwen') return QWEN_MODELS
+    if (provider === 'openai') return OPENAI_MODELS
+    return []  // other 需要手动输入模型名
   }
 
   // 处理供应商变更
-  const handleProviderChange = (newProvider: 'qwen' | 'openai') => {
+  const handleProviderChange = (newProvider: 'qwen' | 'openai' | 'other') => {
     setProvider(newProvider)
-    const models = newProvider === 'qwen' ? QWEN_MODELS : OPENAI_MODELS
-    setModelName(models[0].value)
+    if (newProvider === 'qwen') {
+      setModelName(QWEN_MODELS[0].value)
+    } else if (newProvider === 'openai') {
+      setModelName(OPENAI_MODELS[0].value)
+    } else {
+      setModelName('')
+    }
   }
 
   // 页面初始化时加载配置
@@ -60,10 +70,11 @@ function ConfigPage() {
     const fetchConfig = async () => {
       // 如果本地存储已有配置，直接使用
       if (config.api_key) {
-        setProvider(config.provider as 'qwen' | 'openai' || 'qwen')
+        setProvider(config.provider as 'qwen' | 'openai' | 'other' || 'qwen')
         setModelName(config.model_name || 'qwen-max')
         setApiKey(config.api_key || '')
         setConfigName(config.config_name || '自定义名称')
+        setBaseUrl(config.base_url || '')
         setIsInitialized(true)
         return
       }
@@ -75,7 +86,7 @@ function ConfigPage() {
           const data = result.data
           // 优先使用 provider 字段，否则通过 model_name 推断
           if (data.provider) {
-            setProvider(data.provider as 'qwen' | 'openai')
+            setProvider(data.provider as 'qwen' | 'openai' | 'other')
           } else {
             const model = data.model_name || 'qwen-max'
             setProvider(model.startsWith('qwen') ? 'qwen' : 'openai')
@@ -83,6 +94,7 @@ function ConfigPage() {
           setModelName(data.model_name || 'qwen-max')
           setApiKey(data.api_key || '')
           setConfigName(data.config_name || '自定义名称')
+          setBaseUrl(data.base_url || '')
           setConfig(data)
         }
       } catch (error) {
@@ -115,14 +127,39 @@ function ConfigPage() {
       return
     }
 
+    // 检查是否存在同名配置
+    const existingConfig = savedConfigs.find(cfg => cfg.config_name === configName)
+    if (existingConfig) {
+      // 存在同名配置，弹窗确认
+      setShowConfirmModal(true)
+      return
+    }
+
+    // 不存在同名配置，直接保存
+    await doSave()
+  }
+
+  // 执行实际保存操作
+  const doSave = async () => {
+    setShowConfirmModal(false)
     setIsSaving(true)
     setSaveMessage('')
 
+    // 根据 provider 自动设置 base_url
+    let finalBaseUrl = baseUrl
+    if (provider === 'qwen') {
+      finalBaseUrl = 'https://dashscope.aliyuncs.com/compatible-mode/v1'
+    } else if (provider === 'openai') {
+      finalBaseUrl = 'https://api.openai.com/v1'
+    }
+
     try {
-      const result = await saveConfig(modelName, apiKey, configName, provider) as { success: boolean }
+      const result = await saveConfig(modelName, apiKey, configName, provider, finalBaseUrl) as { success: boolean }
       if (result.success) {
         setSaveMessage('保存成功')
-        setConfig({ model_name: modelName, api_key: apiKey, config_name: configName, provider: provider })
+        setConfig({ model_name: modelName, api_key: apiKey, config_name: configName, provider: provider, base_url: finalBaseUrl })
+        // 刷新配置列表
+        fetchSavedConfigs()
       } else {
         setSaveMessage('保存失败')
       }
@@ -230,21 +267,50 @@ function ConfigPage() {
           <label className="block text-sm font-medium text-gray-700 mb-2">
             模型名称
           </label>
-          <select
-            value={modelName}
-            onChange={(e) => setModelName(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            {getModels().map((model) => (
-              <option key={model.value} value={model.value}>
-                {model.label}
-              </option>
-            ))}
-          </select>
+          {provider === 'other' ? (
+            <input
+              type="text"
+              value={modelName}
+              onChange={(e) => setModelName(e.target.value)}
+              placeholder="请输入模型名称，如 gpt-4o"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          ) : (
+            <select
+              value={modelName}
+              onChange={(e) => setModelName(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              {getModels().map((model) => (
+                <option key={model.value} value={model.value}>
+                  {model.label}
+                </option>
+              ))}
+            </select>
+          )}
           <p className="mt-1 text-sm text-gray-500">
-            选择具体的模型版本
+            {provider === 'other' ? '请输入要使用的模型名称' : '选择具体的模型版本'}
           </p>
         </div>
+
+        {/* Base URL 输入 - 仅当选择 "其他" 时显示 */}
+        {provider === 'other' && (
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              API 端点 (Base URL)
+            </label>
+            <input
+              type="text"
+              value={baseUrl}
+              onChange={(e) => setBaseUrl(e.target.value)}
+              placeholder="https://api.openai.com/v1"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            <p className="mt-1 text-sm text-gray-500">
+              输入 API 服务的 base URL 地址
+            </p>
+          </div>
+        )}
 
         {/* API Key 输入 */}
         <div>
@@ -358,6 +424,46 @@ function ConfigPage() {
                   ))}
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 确认更新配置弹窗 */}
+      {showConfirmModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl w-96 max-h-[80vh] overflow-hidden">
+            <div className="p-4 border-b border-gray-200 flex justify-between items-center">
+              <h3 className="text-lg font-medium">确认更新</h3>
+              <button
+                onClick={() => setShowConfirmModal(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="p-4">
+              <p className="text-gray-600 mb-4">
+                配置名称 "{configName}" 已存在，是否确认更新？
+              </p>
+              <p className="text-sm text-gray-500 mb-4">
+                更新后将覆盖原有配置。
+              </p>
+              <div className="flex justify-end gap-3">
+                <button
+                  onClick={() => setShowConfirmModal(false)}
+                  className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+                >
+                  取消
+                </button>
+                <button
+                  onClick={doSave}
+                  disabled={isSaving}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-blue-300"
+                >
+                  {isSaving ? '保存中...' : '确认更新'}
+                </button>
+              </div>
             </div>
           </div>
         </div>

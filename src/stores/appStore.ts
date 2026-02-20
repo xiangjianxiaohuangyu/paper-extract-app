@@ -15,6 +15,7 @@ export interface AppConfig {
   api_key: string
   config_name?: string
   provider?: string
+  base_url?: string
 }
 
 // 环境检测结果类型
