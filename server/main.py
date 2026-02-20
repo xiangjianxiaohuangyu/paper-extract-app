@@ -47,6 +47,11 @@ class AnalyzeRequest(BaseModel):
     fields: List[str]
     save_path: Optional[str] = None
     save_format: Optional[str] = "json"
+    # 配置信息（使用当前页面配置）
+    model_name: str = ""
+    api_key: str = ""
+    provider: str = ""
+    base_url: str = ""
 
 
 class ConfigRequest(BaseModel):
@@ -95,7 +100,11 @@ async def analyze(request: AnalyzeRequest):
     try:
         result = await pipeline.run_pipeline(
             file_paths=request.file_paths,
-            fields=request.fields
+            fields=request.fields,
+            model_name=request.model_name,
+            api_key=request.api_key,
+            provider=request.provider,
+            base_url=request.base_url
         )
 
         # 检查是否有错误

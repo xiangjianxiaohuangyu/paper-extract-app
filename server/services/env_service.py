@@ -2,7 +2,7 @@
 环境检测服务
 负责检测 Python 版本、依赖包、API 连通性等
 """
-print(">>> import env_service...")
+#print(">>> import env_service...")
 import sys
 import subprocess
 import importlib.metadata
@@ -129,7 +129,7 @@ async def check_dependencies() -> Dict:
             dependencies[pkg] = {"installed": False}
             await push_log("env", f"  - {pkg}: 未安装")
 
-    await push_log("env", "依赖检测完成")
+    # await push_log("env", "依赖检测完成")
     return dependencies
 
 
@@ -145,7 +145,7 @@ async def check_model_connection() -> Dict:
         - 测试 API 端点是否可达
         - 验证 API 密钥是否有效
     """
-    await push_log("env", "检测 API 连通性...")
+    
 
     # TODO: 实现实际的 API 连通性检测
     # try:
@@ -158,7 +158,6 @@ async def check_model_connection() -> Dict:
     # except Exception as e:
     #     return {"status": "error", "message": f"API 连接失败: {str(e)}"}
 
-    await push_log("env", "  - API 连通性: 正常 (Mock)")
     return {
         "status": "ok",
         "message": "API 连接正常"
@@ -179,7 +178,7 @@ async def run_all_checks() -> Dict:
         - check_model_connection() - API 连通性检测
     """
 
-    await push_log("env", "开始环境检测...")
+    #await push_log("env", "开始环境检测...")
 
     # Python 版本检测
     python_result = await check_python()
@@ -190,7 +189,7 @@ async def run_all_checks() -> Dict:
     # API 连通性检测
     api_result = await check_model_connection()
 
-    await push_log("env", "环境检测完成!")
+    #await push_log("env", "环境检测完成!")
 
     return {
         "python": python_result,

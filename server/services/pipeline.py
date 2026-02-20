@@ -2,7 +2,7 @@
 流水线服务
 负责整合 PDF 解析、分块、字段提取、结果汇总的完整流程
 """
-print(">>> import pipeline...")
+#print(">>> import pipeline...")
 import os
 from typing import List, Dict
 import tiktoken

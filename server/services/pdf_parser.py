@@ -2,7 +2,7 @@
 PDF 解析服务
 负责解析 PDF 文件并提取文本内容
 """
-print(">>> import pdf_parser...")
+#print(">>> import pdf_parser...")
 from typing import Optional
 from langchain_community.document_loaders import PyPDFLoader
 

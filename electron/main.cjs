@@ -124,14 +124,18 @@ function createWindow() {
 app.whenReady().then(async () => {
   const isDev = !app.isPackaged
 
+  // 先创建窗口（让用户看到界面）
+  createWindow()
+
+  // 然后在后台启动服务
   if (!isDev) {
-    // 生产模式：先启动 Python 服务
+    // 生产模式：启动 Python 服务
     startServer()
 
-    // 等待服务器就绪
+    // 等待服务器就绪（后台进行）
     try {
       console.log('等待 Python 服务启动...')
-      await waitForServer('http://localhost:8000')
+      await waitForServer('http://localhost:8000', 60000)  // 增加超时时间
       console.log('Python 服务已就绪')
     } catch (err) {
       console.error('等待服务器超时:', err)
@@ -140,8 +144,6 @@ app.whenReady().then(async () => {
     // 开发模式：启动 Python 服务
     startServer()
   }
-
-  createWindow()
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {

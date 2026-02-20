@@ -2,7 +2,7 @@
 LLM 服务
 负责调用大语言模型进行字段提取
 """
-print(">>> import llm_service...")
+#print(">>> import llm_service...")
 import json
 from typing import List, Dict, Optional
 import tiktoken
