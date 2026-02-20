@@ -26,6 +26,11 @@
     "directories": {
       "output": "release"
     },
+    "publish": {
+      "provider": "github",
+      "owner": "xiangjianxiaohuangyu",
+      "repo": "paper-extract-app"
+    },
     "files": [
       "dist/**/*",
       "electron/**/*",
