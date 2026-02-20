@@ -27,17 +27,7 @@ jobs:
           npm install
           cd server && pip install -r requirements.txt
 
-      - name: Build
-        run: npm run build:all
+      - name: Build and publish
+        run: npm run build:all -- --publish always
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-
-      - name: Create Release
-        uses: softprops/action-gh-release@v1
-        with:
-          files: |
-            dist/server/server.exe
-            release/**/*.exe
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
