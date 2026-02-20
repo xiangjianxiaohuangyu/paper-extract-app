@@ -117,7 +117,7 @@ async def estimate_and_log_tokens(content: str, fields: List[str], model_name: s
 
     estimated_cost = estimate_cost(total_input_tokens, model_name=model_name)
 
-    print(f"[estimate_and_log_tokens] 分块数量: {chunk_count}, 总输入 token: {total_input_tokens}, 费用: {estimated_cost}")
+    # print(f"[estimate_and_log_tokens] 分块数量: {chunk_count}, 总输入 token: {total_input_tokens}, 费用: {estimated_cost}")
 
     return total_input_tokens, estimated_cost
 

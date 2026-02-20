@@ -94,7 +94,7 @@ async def save_config(model_name: str, api_key: str, config_name: str = "自定�
             configs.append(config_data)
 
         if save_all_configs_to_file(configs):
-            await push_log("config", f"配置已保存: {config_name}")
+            await push_log("config", f"配置已保存: {config_name} ({provider}/{model_name}, base_url: {base_url})")
             return True
         return False
     except Exception as e:
@@ -112,7 +112,7 @@ async def load_config(config_name: str = "自定义名称") -> Dict:
     Returns:
         配置字典，包含 model_name 和 api_key
     """
-    await push_log("config", f"加载配置: {config_name}...")
+    
 
     try:
         configs = get_all_configs_from_file()
@@ -127,7 +127,7 @@ async def load_config(config_name: str = "自定义名称") -> Dict:
                 # 更新 updated_at 时间戳
                 configs[i]['updated_at'] = datetime.now().isoformat()
                 save_all_configs_to_file(configs)
-                await push_log("config", "配置加载成功")
+                await push_log("config", f"加载配置: {config_name}...")
                 return configs[i]
 
         # 未找到配置，返回默认配置

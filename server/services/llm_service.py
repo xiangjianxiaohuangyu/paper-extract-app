@@ -66,7 +66,6 @@ def extract_from_chunk(chunk: str, fields: List[str], model_name: str, api_key: 
 """
 
     try:
-
         raw = call_llm(prompt, model_name, api_key, base_url)
         print(f"[extract_from_chunk] 块原始返回: {raw[:500]}...")
 
@@ -79,10 +78,8 @@ def extract_from_chunk(chunk: str, fields: List[str], model_name: str, api_key: 
 
         return json.loads(response.strip())
     except Exception as e:
-        print(f"[extract_from_chunk] 解析失败: {e}")
-        result = {field: "" for field in fields}
-        result["error"] = str(e)
-        return result
+        # 当 LLM 返回的不是有效 JSON 时，直接返回空值（静默处理）
+        return {field: "" for field in fields}
 
 
 def merge_results(results: List[Dict], fields: List[str], model_name: str, api_key: str, base_url: str = "") -> Dict:
@@ -165,7 +162,7 @@ def extract_fields_advanced(content: str, fields: List[str], model_name: str, ap
     print(f"[extract_fields_advanced] 开始处理，内容长度: {len(content)} 字符", flush=True)
 
     # 1. Token-aware 分块
-    chunks = split_by_tokens(content, max_tokens=3000, overlap=300)
+    chunks = split_by_tokens(content, max_tokens=10000, overlap=500)
     print(f"[extract_fields_advanced] 分块数量: {len(chunks)}")
 
     # 2. Map 阶段：每块提取字段
@@ -214,15 +211,6 @@ def call_llm(prompt: str, model_name: str = "qwen-max", api_key: str = "", base_
     Returns:
         LLM 返回的文本
     """
-    print(f"[call_llm] 开始调用, model={model_name}, prompt长度={len(prompt)}")
-
-    if not api_key:
-        raise ValueError("API Key 不能为空")
-
-    if not base_url:
-        raise ValueError("base_url 不能为空，请在配置中设置 API 端点")
-
-    print(f"[call_llm] 使用 base_url: {base_url}")
 
     try:
         # 使用 langchain-openai 兼容各种 OpenAI 兼容 API

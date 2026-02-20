@@ -110,18 +110,6 @@ function EnvCheckPage() {
             </div>
           )}
 
-          {/* API 连接 */}
-          {envCheckResult.api_connection && (
-            <div className="bg-white border border-gray-200 rounded-lg p-4">
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-medium text-gray-700">API 连接</h3>
-                {renderStatusIcon(envCheckResult.api_connection.status)}
-              </div>
-              <div className="mt-2 text-sm text-gray-600">
-                <p>状态: {envCheckResult.api_connection.message}</p>
-              </div>
-            </div>
-          )}
         </div>
       )}
 

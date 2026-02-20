@@ -154,7 +154,8 @@ app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     // 关闭 Python 服务
     if (serverProcess) {
-      serverProcess.kill()
+      // 使用更强制的方式杀死进程
+      serverProcess.kill('SIGTERM')
     }
     app.quit()
   }
@@ -163,6 +164,7 @@ app.on('window-all-closed', () => {
 app.on('before-quit', () => {
   // 关闭 Python 服务
   if (serverProcess) {
-    serverProcess.kill()
+    // 使用更强制的方式杀死进程
+    serverProcess.kill('SIGTERM')
   }
 })

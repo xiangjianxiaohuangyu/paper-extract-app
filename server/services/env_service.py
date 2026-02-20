@@ -5,8 +5,59 @@
 print(">>> import env_service...")
 import sys
 import subprocess
+import importlib.metadata
 from typing import Dict, List
 from .log_service import push_log
+
+
+def get_version(package_name: str) -> str:
+    """
+    获取包的版本号
+
+    Args:
+        package_name: 包名
+
+    Returns:
+        版本号字符串，如果获取失败返回 None
+    """
+    # 包名到模块名的映射
+    package_to_module = {
+        "python-dotenv": "dotenv",
+        "pydantic-settings": "pydantic_settings",
+        "langchain-community": "langchain_community",
+        "langchain-openai": "langchain_openai",
+    }
+
+    module_name = package_to_module.get(package_name, package_name.replace('-', '_'))
+
+    # 方法1: 尝试从导入的模块获取 __version__ 属性
+    try:
+        module = __import__(module_name, fromlist=['__version__'])
+        if hasattr(module, '__version__'):
+            return module.__version__
+    except (ImportError, AttributeError):
+        pass
+
+    # 方法2: 尝试获取 _version 属性
+    try:
+        module = __import__(module_name, fromlist=['_version'])
+        if hasattr(module, '_version'):
+            return module._version.version
+    except (ImportError, AttributeError):
+        pass
+
+    # 方法3: 尝试 importlib.metadata（开发环境可用）
+    try:
+        return importlib.metadata.version(package_name)
+    except importlib.metadata.PackageNotFoundError:
+        pass
+
+    # 方法4: 尝试将包名转为下划线后获取
+    try:
+        normalized_name = package_name.replace('-', '_')
+        return importlib.metadata.version(normalized_name)
+    except importlib.metadata.PackageNotFoundError:
+        return None
 
 
 async def check_python() -> Dict:
@@ -32,28 +83,48 @@ async def check_python() -> Dict:
 
 async def check_dependencies() -> Dict:
     """
-    检测 pypdf、langchain 等依赖
+    检测 requirements.txt 中的所有依赖
 
     Returns:
         包含各依赖包检测结果的字典
 
     Note:
-        TODO: 实现依赖检测逻辑
-        - 检测 pypdf / pdfplumber
-        - 检测 langchain
-        - 检测其他必要依赖
+        检测以下依赖：
+        - 基础环境: python-dotenv
+        - Web 服务: fastapi, uvicorn, pydantic, pydantic-settings
+        - AI 核心: langchain, langchain-community, langchain-openai, openai
+        - 其他: tiktoken, pandas, openpyxl
     """
     await push_log("env", "检测依赖包...")
 
     dependencies = {}
 
-    # 检测常用依赖包
-    packages = ["pypdf", "pdfplumber", "langchain", "openai", "requests"]
+    # 包名到模块名的映射
+    package_to_module = {
+        "python-dotenv": "dotenv",
+        "pydantic-settings": "pydantic_settings",
+        "langchain-community": "langchain_community",
+        "langchain-openai": "langchain_openai",
+    }
+
+    # 检测 requirements.txt 中的所有依赖包
+    packages = [
+        "python-dotenv",
+        "fastapi", "uvicorn", "pydantic", "pydantic-settings",
+        "langchain", "langchain-community", "langchain-openai", "openai",
+        "tiktoken", "pandas", "openpyxl"
+    ]
     for pkg in packages:
+        # 获取对应的模块名
+        module_name = package_to_module.get(pkg, pkg.replace('-', '_'))
+
+        # 尝试导入模块
         try:
-            __import__(pkg)
-            dependencies[pkg] = {"installed": True, "version": "unknown"}
-            await push_log("env", f"  - {pkg}: 已安装")
+            __import__(module_name)
+            # 如果导入成功，尝试获取版本
+            version = get_version(pkg)
+            dependencies[pkg] = {"installed": True, "version": version or "unknown"}
+            await push_log("env", f"  - {pkg}: 已安装 (v{version or 'unknown'})")
         except ImportError:
             dependencies[pkg] = {"installed": False}
             await push_log("env", f"  - {pkg}: 未安装")
@@ -107,24 +178,19 @@ async def run_all_checks() -> Dict:
         - check_dependencies() - 依赖检测
         - check_model_connection() - API 连通性检测
     """
-    await push_log("env", "=" * 30)
+
     await push_log("env", "开始环境检测...")
-    await push_log("env", "=" * 30)
 
     # Python 版本检测
     python_result = await check_python()
 
     # 依赖检测
-    await push_log("env", "-" * 30)
     dependencies_result = await check_dependencies()
 
     # API 连通性检测
-    await push_log("env", "-" * 30)
     api_result = await check_model_connection()
 
-    await push_log("env", "=" * 30)
     await push_log("env", "环境检测完成!")
-    await push_log("env", "=" * 30)
 
     return {
         "python": python_result,
