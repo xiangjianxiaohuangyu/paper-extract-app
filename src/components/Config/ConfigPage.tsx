@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useAppStore } from '@/stores/appStore'
-import { saveConfig, loadConfig, getConfigList, deleteConfig, getLatestConfig } from '@/api'
+import { saveConfig, loadConfig, getConfigList, deleteConfig, getLatestConfig, testConnection } from '@/api'
 import TerminalPanel from '@/components/Terminal'
 
 // 模型选项 - 按供应商分组
@@ -44,6 +44,8 @@ function ConfigPage() {
   const [showConfirmModal, setShowConfirmModal] = useState(false)
   const [savedConfigs, setSavedConfigs] = useState<SavedConfig[]>([])
   const [isInitialized, setIsInitialized] = useState(false)
+  const [isTesting, setIsTesting] = useState(false)
+  const [testMessage, setTestMessage] = useState('')
 
   // 根据供应商获取模型列表
   const getModels = () => {
@@ -57,10 +59,13 @@ function ConfigPage() {
     setProvider(newProvider)
     if (newProvider === 'qwen') {
       setModelName(QWEN_MODELS[0].value)
+      setBaseUrl('https://dashscope.aliyuncs.com/compatible-mode/v1')
     } else if (newProvider === 'openai') {
       setModelName(OPENAI_MODELS[0].value)
+      setBaseUrl('https://api.openai.com/v1')
     } else {
       setModelName('')
+      setBaseUrl('')
     }
   }
 
@@ -145,19 +150,11 @@ function ConfigPage() {
     setIsSaving(true)
     setSaveMessage('')
 
-    // 根据 provider 自动设置 base_url
-    let finalBaseUrl = baseUrl
-    if (provider === 'qwen') {
-      finalBaseUrl = 'https://dashscope.aliyuncs.com/compatible-mode/v1'
-    } else if (provider === 'openai') {
-      finalBaseUrl = 'https://api.openai.com/v1'
-    }
-
     try {
-      const result = await saveConfig(modelName, apiKey, configName, provider, finalBaseUrl) as { success: boolean }
+      const result = await saveConfig(modelName, apiKey, configName, provider, baseUrl) as { success: boolean }
       if (result.success) {
         setSaveMessage('保存成功')
-        setConfig({ model_name: modelName, api_key: apiKey, config_name: configName, provider: provider, base_url: finalBaseUrl })
+        setConfig({ model_name: modelName, api_key: apiKey, config_name: configName, provider: provider, base_url: baseUrl })
         // 刷新配置列表
         fetchSavedConfigs()
       } else {
@@ -192,6 +189,7 @@ function ConfigPage() {
         }
         setModelName(data.model_name || 'qwen-max')
         setApiKey(data.api_key || '')
+        setBaseUrl(data.base_url || '')
         setConfigName(data.config_name || savedConfig.config_name)
         setConfig(data)
         setSaveMessage(`已加载配置: ${savedConfig.config_name}`)
@@ -216,6 +214,36 @@ function ConfigPage() {
       }
     } catch (error) {
       console.error('删除配置失败:', error)
+    }
+  }
+
+  // 测试连通性
+  const handleTestConnection = async () => {
+    if (!apiKey.trim()) {
+      setTestMessage('请先输入 API Key')
+      return
+    }
+
+    if (!baseUrl.trim()) {
+      setTestMessage('请先填写 API 端点')
+      return
+    }
+
+    setIsTesting(true)
+    setTestMessage('')
+
+    try {
+      const result = await testConnection(modelName, apiKey, provider, baseUrl) as { success: boolean; message: string }
+      if (result.success) {
+        setTestMessage('✓ 连接成功')
+      } else {
+        setTestMessage(`✗ ${result.message}`)
+      }
+    } catch (error) {
+      setTestMessage('✗ 测试失败: 网络错误')
+    } finally {
+      setIsTesting(false)
+      setTimeout(() => setTestMessage(''), 5000)
     }
   }
 
@@ -293,24 +321,22 @@ function ConfigPage() {
           </p>
         </div>
 
-        {/* Base URL 输入 - 仅当选择 "其他" 时显示 */}
-        {provider === 'other' && (
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              API 端点 (Base URL)
-            </label>
-            <input
-              type="text"
-              value={baseUrl}
-              onChange={(e) => setBaseUrl(e.target.value)}
-              placeholder="https://api.openai.com/v1"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-            <p className="mt-1 text-sm text-gray-500">
-              输入 API 服务的 base URL 地址
-            </p>
-          </div>
-        )}
+        {/* Base URL 输入 - 始终显示 */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            API 端点 (Base URL)
+          </label>
+          <input
+            type="text"
+            value={baseUrl}
+            onChange={(e) => setBaseUrl(e.target.value)}
+            placeholder="https://api.openai.com/v1"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+          <p className="mt-1 text-sm text-gray-500">
+            {provider === 'other' ? '请输入自定义 API 服务的 base URL 地址' : 'API 端点地址（自动填充）'}
+          </p>
+        </div>
 
         {/* API Key 输入 */}
         <div>
@@ -348,6 +374,17 @@ function ConfigPage() {
           >
             导入配置
           </button>
+          <button
+            onClick={handleTestConnection}
+            disabled={isTesting}
+            className={`px-6 py-2 rounded-lg font-medium transition-colors ${
+              isTesting
+                ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                : 'bg-green-600 text-white hover:bg-green-700'
+            }`}
+          >
+            {isTesting ? '测试中...' : '测试连通性'}
+          </button>
           {saveMessage && (
             <span
               className={`text-sm ${
@@ -355,6 +392,15 @@ function ConfigPage() {
               }`}
             >
               {saveMessage}
+            </span>
+          )}
+          {testMessage && (
+            <span
+              className={`text-sm ${
+                testMessage.includes('✓') ? 'text-green-600' : 'text-red-600'
+              }`}
+            >
+              {testMessage}
             </span>
           )}
         </div>

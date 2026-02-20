@@ -162,6 +162,28 @@ export async function deleteConfig(configName: string) {
   }
 }
 
+// ============ 连通性测试 API ============
+
+/**
+ * 测试 API 连通性
+ * 对应后端 /api/config/test-connection
+ */
+export async function testConnection(modelName: string, apiKey: string, provider: string, baseUrl: string) {
+  try {
+    return await api.post('/config/test-connection', {
+      model_name: modelName,
+      api_key: apiKey,
+      provider: provider,
+      base_url: baseUrl,
+    })
+  } catch (error) {
+    return {
+      success: false,
+      message: '测试失败: 网络错误',
+    }
+  }
+}
+
 // ============ 环境检测 API ============
 
 /**

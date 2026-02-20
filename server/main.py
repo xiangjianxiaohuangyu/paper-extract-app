@@ -10,9 +10,9 @@ if sys.platform == "win32":
 
 import time
 start = time.time()
-print("========== FastAPI start ==========")
-print("测试中文输出是否正常")
-print("start import module...")
+# print("========== FastAPI start ==========")
+# print("测试中文输出是否正常")
+# print("start import module...")
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -27,7 +27,7 @@ import pandas as pd
 from services import pipeline, config_service, env_service
 from services.log_service import manager
 
-print(f"import module finish, use time: {time.time() - start:.2f}s")
+#print(f"import module finish, use time: {time.time() - start:.2f}s")
 
 app = FastAPI(title="论文提取 API")
 
@@ -77,6 +77,11 @@ class EnvCheckResponse(BaseModel):
     success: bool
     message: str
     data: Optional[dict] = None
+
+
+class TestConnectionResponse(BaseModel):
+    success: bool
+    message: str
 
 
 @app.get("/")
@@ -280,6 +285,43 @@ async def delete_config(request: DeleteConfigRequest):
         return DeleteConfigResponse(
             success=False,
             message=f"删除失败: {str(e)}"
+        )
+
+
+@app.post("/api/config/test-connection", response_model=TestConnectionResponse)
+async def test_connection(request: ConfigRequest):
+    """
+    测试 API 连通性
+    使用当前配置的 API Key 和模型进行最小请求测试
+    """
+    try:
+        from openai import OpenAI
+
+        # 根据 provider 设置 base_url
+        base_url = request.base_url or "https://dashscope.aliyuncs.com/compatible-mode/v1"
+        if request.provider == "openai":
+            base_url = "https://api.openai.com/v1"
+
+        client = OpenAI(
+            api_key=request.api_key,
+            base_url=base_url
+        )
+
+        # 发送最小请求测试连通性
+        response = client.chat.completions.create(
+            model=request.model_name,
+            messages=[{"role": "user", "content": "hi"}],
+            max_tokens=5
+        )
+
+        return TestConnectionResponse(
+            success=True,
+            message="连接成功"
+        )
+    except Exception as e:
+        return TestConnectionResponse(
+            success=False,
+            message=f"连接失败: {str(e)}"
         )
 
 
