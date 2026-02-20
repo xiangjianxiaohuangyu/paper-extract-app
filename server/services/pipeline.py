@@ -153,10 +153,14 @@ async def run_pipeline(file_paths: List[str], fields: List[str]) -> Dict:
     api_key = config.get("api_key", "")
     model_name = config.get("model_name", "qwen-max")
     base_url = config.get("base_url", "")
+    # 获取高级配置
+    temperature = config.get("temperature", 0.1)
+    max_tokens = config.get("max_tokens", 10000)
+    overlap = config.get("overlap", 500)
 
     # 输出配置信息
 
-    await push_log("analyze", f"配置信息: config_name={config_name}, provider={provider}, model_name={model_name}, api_key={'***' + api_key[-4:] if api_key else ''}, base_url={base_url}")
+    await push_log("analyze", f"配置信息: config_name={config_name}, provider={provider}, model_name={model_name}, api_key={'***' + api_key[-4:] if api_key else ''}, base_url={base_url}, temperature={temperature}, max_tokens={max_tokens}, overlap={overlap}")
 
     # 检查配置完整性
     if not api_key:
@@ -178,7 +182,7 @@ async def run_pipeline(file_paths: List[str], fields: List[str]) -> Dict:
         await push_log("analyze", f"文件{os.path.basename(file_path)}预估输入 token: {input_tokens}")
 
         # Step 3: 字段提取
-        result = llm_service.extract_fields_advanced(content, fields, model_name, api_key, base_url)
+        result = llm_service.extract_fields_advanced(content, fields, model_name, api_key, base_url, max_tokens, overlap, temperature)
 
         # 检查是否有错误
         if result.get("error"):

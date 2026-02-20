@@ -73,7 +73,16 @@ export async function analyzePdf(filePaths: string[], fields: string[], savePath
  * 保存配置
  * 对应后端 config_service.save_config()
  */
-export async function saveConfig(modelName: string, apiKey: string, configName: string = '自定义名称', provider: string = 'qwen', baseUrl: string = '') {
+export async function saveConfig(
+  modelName: string,
+  apiKey: string,
+  configName: string = '',
+  provider: string = 'qwen',
+  baseUrl: string = '',
+  temperature: number = 0.1,
+  maxTokens: number = 10000,
+  overlap: number = 500
+) {
   try {
     return await api.post('/config/save', {
       model_name: modelName,
@@ -81,6 +90,9 @@ export async function saveConfig(modelName: string, apiKey: string, configName: 
       config_name: configName,
       provider: provider,
       base_url: baseUrl,
+      temperature: temperature,
+      max_tokens: maxTokens,
+      overlap: overlap,
     })
   } catch (error) {
     return {
@@ -94,16 +106,16 @@ export async function saveConfig(modelName: string, apiKey: string, configName: 
  * 加载配置
  * 对应后端 config_service.load_config()
  */
-export async function loadConfig(configName: string = '自定义名称') {
+export async function loadConfig(configName: string = '') {
   try {
     return await api.get(`/config/load?config_name=${configName}`)
   } catch (error) {
     return {
       success: true,
       data: {
-        config_name: '自定义名称',
-        provider: 'qwen',
-        model_name: 'qwen-max',
+        config_name: '',
+        provider: 'other',
+        model_name: '',
         api_key: '',
       },
     }
@@ -136,10 +148,11 @@ export async function getLatestConfig() {
     return {
       success: true,
       data: {
-        config_name: '自定义名称',
-        provider: 'qwen',
-        model_name: 'qwen-max',
+        config_name: '',
+        provider: 'other',
+        model_name: '',
         api_key: '',
+        base_url: '',
       },
     }
   }

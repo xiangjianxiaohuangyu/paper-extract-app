@@ -32,11 +32,11 @@ interface SavedConfig {
 }
 
 function ConfigPage() {
-  const { config, setConfig, terminalLogs, clearLogs } = useAppStore()
-  const [provider, setProvider] = useState<'qwen' | 'openai' | 'other'>(config.provider as 'qwen' | 'openai' | 'other' || 'qwen')
-  const [modelName, setModelName] = useState(config.model_name || 'qwen-max')
+  const {config, setConfig, terminalLogs, clearLogs } = useAppStore()
+  const [provider, setProvider] = useState<'qwen' | 'openai' | 'other' | ''>(config.provider as 'qwen' | 'openai' | 'other' | '' || 'other')
+  const [modelName, setModelName] = useState(config.model_name || '')
   const [apiKey, setApiKey] = useState(config.api_key || '')
-  const [configName, setConfigName] = useState(config.config_name || '自定义名称')
+  const [configName, setConfigName] = useState(config.config_name || '')
   const [baseUrl, setBaseUrl] = useState(config.base_url || '')
   const [isSaving, setIsSaving] = useState(false)
   const [saveMessage, setSaveMessage] = useState('')
@@ -46,6 +46,11 @@ function ConfigPage() {
   const [isInitialized, setIsInitialized] = useState(false)
   const [isTesting, setIsTesting] = useState(false)
   const [testMessage, setTestMessage] = useState('')
+
+  // 高级设置状态
+  const [temperature, setTemperature] = useState(0.1)
+  const [maxTokens, setMaxTokens] = useState(10000)
+  const [overlap, setOverlap] = useState(500)
 
   // 根据供应商获取模型列表
   const getModels = () => {
@@ -73,38 +78,46 @@ function ConfigPage() {
   useEffect(() => {
     let isMounted = true
     const fetchConfig = async () => {
-      // 如果本地存储已有配置，直接使用
-      if (config.api_key) {
-        setProvider(config.provider as 'qwen' | 'openai' | 'other' || 'qwen')
-        setModelName(config.model_name || 'qwen-max')
-        setApiKey(config.api_key || '')
-        setConfigName(config.config_name || '自定义名称')
-        setBaseUrl(config.base_url || '')
-        setIsInitialized(true)
-        return
-      }
+      // 加载已保存的配置列表（用于检测重复）
+      fetchSavedConfigs()
 
-      // 否则从后端获取最近配置
+      // 优先从后端获取最近配置
       try {
         const result = await getLatestConfig() as { success: boolean; data?: any }
         if (result.success && result.data && isMounted) {
           const data = result.data
-          // 优先使用 provider 字段，否则通过 model_name 推断
+          // 从后端加载配置
           if (data.provider) {
             setProvider(data.provider as 'qwen' | 'openai' | 'other')
           } else {
-            const model = data.model_name || 'qwen-max'
-            setProvider(model.startsWith('qwen') ? 'qwen' : 'openai')
+            setProvider('other')
           }
-          setModelName(data.model_name || 'qwen-max')
+          setModelName(data.model_name || '')
           setApiKey(data.api_key || '')
-          setConfigName(data.config_name || '自定义名称')
+          setConfigName(data.config_name || '')
           setBaseUrl(data.base_url || '')
+          setTemperature(data.temperature || 0.1)
+          setMaxTokens(data.max_tokens || 10000)
+          setOverlap(data.overlap || 500)
           setConfig(data)
+          setIsInitialized(true)
+                    
+          return
         }
       } catch (error) {
         console.error('加载配置失败:', error)
       }
+
+      // 后端没有配置时，使用本地存储或默认值
+      if (config.api_key) {
+        setProvider(config.provider as 'qwen' | 'openai' | 'other' || 'other')
+        setModelName(config.model_name)
+        setApiKey(config.api_key)
+        setConfigName(config.config_name || '')
+        setBaseUrl(config.base_url || '')
+        
+      }
+
       if (isMounted) {
         setIsInitialized(true)
       }
@@ -127,34 +140,56 @@ function ConfigPage() {
 
   // 保存配置
   const handleSave = async () => {
+    // 验证配置名称
     if (!configName.trim()) {
       setSaveMessage('请输入配置名称')
       return
     }
 
+    // 验证模型名称
+    if (!modelName.trim()) {
+      setSaveMessage('请输入模型名称')
+      return
+    }
+
+    // 验证 base url
+    if (!baseUrl.trim()) {
+      setSaveMessage('请输入 Base Url')
+      return
+    }
+
+    // 验证 API Key
+    if (!apiKey.trim()) {
+      setSaveMessage('请输入 API Key')
+      return
+    }
+
     // 检查是否存在同名配置
-    const existingConfig = savedConfigs.find(cfg => cfg.config_name === configName)
+    const configNameTrimmed = configName.trim()
+    // console.log('保存配置检查 - 当前配置名:', configNameTrimmed, '已保存列表:', savedConfigs)
+    const existingConfig = savedConfigs.find(cfg => cfg.config_name === configNameTrimmed)
     if (existingConfig) {
+      console.log('检测到重复配置:', existingConfig)
       // 存在同名配置，弹窗确认
       setShowConfirmModal(true)
       return
     }
 
     // 不存在同名配置，直接保存
-    await doSave()
+    await doSave(configNameTrimmed)
   }
 
   // 执行实际保存操作
-  const doSave = async () => {
+  const doSave = async (saveConfigName: string) => {
     setShowConfirmModal(false)
     setIsSaving(true)
     setSaveMessage('')
 
     try {
-      const result = await saveConfig(modelName, apiKey, configName, provider, baseUrl) as { success: boolean }
+      const result = await saveConfig(modelName, apiKey, saveConfigName, provider, baseUrl, temperature, maxTokens, overlap) as { success: boolean }
       if (result.success) {
         setSaveMessage('保存成功')
-        setConfig({ model_name: modelName, api_key: apiKey, config_name: configName, provider: provider, base_url: baseUrl })
+        setConfig({ model_name: modelName, api_key: apiKey, config_name: saveConfigName, provider: provider, base_url: baseUrl, temperature: temperature, max_tokens: maxTokens, overlap: overlap })
         // 刷新配置列表
         fetchSavedConfigs()
       } else {
@@ -182,15 +217,18 @@ function ConfigPage() {
         const data = result.data
         // 优先使用 provider 字段，否则通过 model_name 推断
         if (data.provider) {
-          setProvider(data.provider as 'qwen' | 'openai')
+          setProvider(data.provider as 'qwen' | 'openai' | 'other')
         } else {
-          const model = data.model_name || 'qwen-max'
-          setProvider(model.startsWith('qwen') ? 'qwen' : 'openai')
+          setProvider('other')
         }
-        setModelName(data.model_name || 'qwen-max')
+        setModelName(data.model_name || '')
         setApiKey(data.api_key || '')
         setBaseUrl(data.base_url || '')
         setConfigName(data.config_name || savedConfig.config_name)
+        // 加载高级设置
+        if (data.temperature !== undefined) setTemperature(data.temperature)
+        if (data.max_tokens !== undefined) setMaxTokens(data.max_tokens)
+        if (data.overlap !== undefined) setOverlap(data.overlap)
         setConfig(data)
         setSaveMessage(`已加载配置: ${savedConfig.config_name}`)
         setTimeout(() => setSaveMessage(''), 3000)
@@ -355,6 +393,77 @@ function ConfigPage() {
           </p>
         </div>
 
+        {/* 高级设置 - 滑块样式 */}
+        <div className="bg-gray-50 p-4 rounded-lg space-y-4">
+          <h3 className="text-sm font-medium text-gray-700">高级设置</h3>
+
+          {/* Temperature */}
+          <div>
+            <div className="flex justify-between items-center mb-1">
+              <label className="text-sm text-gray-600">
+                Temperature (温度)
+              </label>
+              <span className="text-sm font-medium text-blue-600">{temperature}</span>
+            </div>
+            <input
+              type="range"
+              min="0"
+              max="2"
+              step="0.1"
+              value={temperature}
+              onChange={(e) => setTemperature(parseFloat(e.target.value))}
+              className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              越小越保守/确定性越高，越大越随机/创造性越强。影响论文解析结果的一致性。
+            </p>
+          </div>
+
+          {/* Max Tokens */}
+          <div>
+            <div className="flex justify-between items-center mb-1">
+              <label className="text-sm text-gray-600">
+                Max Tokens (分块大小)
+              </label>
+              <span className="text-sm font-medium text-blue-600">{maxTokens}</span>
+            </div>
+            <input
+              type="range"
+              min="3000"
+              max="30000"
+              step="1000"
+              value={maxTokens}
+              onChange={(e) => setMaxTokens(parseInt(e.target.value))}
+              className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              越小处理越快但可能遗漏信息，越大信息越完整但处理变慢。影响单次处理的文本长度。
+            </p>
+          </div>
+
+          {/* Overlap */}
+          <div>
+            <div className="flex justify-between items-center mb-1">
+              <label className="text-sm text-gray-600">
+                Overlap (重叠 Token)
+              </label>
+              <span className="text-sm font-medium text-blue-600">{overlap}</span>
+            </div>
+            <input
+              type="range"
+              min="10"
+              max="1000"
+              step="10"
+              value={overlap}
+              onChange={(e) => setOverlap(parseInt(e.target.value))}
+              className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              越小可能丢失边界信息，越大信息保留越完整但有重复。影响相邻分块之间的重叠区域。
+            </p>
+          </div>
+        </div>
+
         {/* 操作按钮 */}
         <div className="flex items-center gap-4">
           <button
@@ -503,7 +612,7 @@ function ConfigPage() {
                   取消
                 </button>
                 <button
-                  onClick={doSave}
+                  onClick={() => doSave(configName.trim())}
                   disabled={isSaving}
                   className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-blue-300"
                 >

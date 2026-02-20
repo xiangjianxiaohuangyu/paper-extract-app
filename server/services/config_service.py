@@ -48,7 +48,16 @@ def save_all_configs_to_file(configs: List[Dict]) -> bool:
         return False
 
 
-async def save_config(model_name: str, api_key: str, config_name: str = "自定义名称", provider: str = "qwen", base_url: str = "") -> bool:
+async def save_config(
+    model_name: str,
+    api_key: str,
+    config_name: str = "",
+    provider: str = "qwen",
+    base_url: str = "",
+    temperature: float = 0.1,
+    max_tokens: int = 10000,
+    overlap: int = 500
+) -> bool:
     """
     保存配置到文件
 
@@ -58,6 +67,9 @@ async def save_config(model_name: str, api_key: str, config_name: str = "自定�
         config_name: 配置名称（用于区分不同配置）
         provider: 模型供应商
         base_url: API 端点 URL（自定义供应商时使用）
+        temperature: 温度参数
+        max_tokens: 分块最大 Token 数
+        overlap: 分块重叠 Token 数
 
     Returns:
         是否保存成功
@@ -68,7 +80,7 @@ async def save_config(model_name: str, api_key: str, config_name: str = "自定�
         # 清理配置名称，移除非法字符
         safe_name = "".join(c for c in config_name if c.isalnum() or c in ('-', '_', '.'))
         if not safe_name:
-            safe_name = "自定义名称"
+            safe_name = ""
 
         # 检查是否已存在相同名称的配置
         existing_index = -1
@@ -83,6 +95,9 @@ async def save_config(model_name: str, api_key: str, config_name: str = "自定�
             "model_name": model_name,
             "api_key": api_key,
             "base_url": base_url,
+            "temperature": temperature,
+            "max_tokens": max_tokens,
+            "overlap": overlap,
             "updated_at": datetime.now().isoformat()
         }
 
@@ -102,7 +117,7 @@ async def save_config(model_name: str, api_key: str, config_name: str = "自定�
         return False
 
 
-async def load_config(config_name: str = "自定义名称") -> Dict:
+async def load_config(config_name: str = "") -> Dict:
     """
     加载配置文件，并更新其 updated_at 时间戳
 
@@ -120,7 +135,7 @@ async def load_config(config_name: str = "自定义名称") -> Dict:
         # 清理配置名称
         safe_name = "".join(c for c in config_name if c.isalnum() or c in ('-', '_', '.'))
         if not safe_name:
-            safe_name = "自定义名称"
+            safe_name = ""
 
         for i, cfg in enumerate(configs):
             if cfg.get('config_name') == safe_name:
@@ -216,8 +231,8 @@ def get_default_config() -> Dict:
         默认配置字典
     """
     return {
-        "config_name": "自定义名称",
-        "provider": "qwen",
-        "model_name": "qwen-max",
+        "config_name": "",
+        "provider": "other",
+        "model_name": "",
         "api_key": ""
     }

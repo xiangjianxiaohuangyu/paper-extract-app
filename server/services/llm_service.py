@@ -40,7 +40,7 @@ def split_by_tokens(text: str, max_tokens: int = 3000, overlap: int = 300) -> Li
     return chunks
 
 
-def extract_from_chunk(chunk: str, fields: List[str], model_name: str, api_key: str, base_url: str = "") -> Dict:
+def extract_from_chunk(chunk: str, fields: List[str], model_name: str, api_key: str, base_url: str = "", temperature: float = 0.1) -> Dict:
     """
     Map 阶段：从单个文本块中提取字段
 
@@ -50,11 +50,12 @@ def extract_from_chunk(chunk: str, fields: List[str], model_name: str, api_key: 
         model_name: 模型名称
         api_key: API 密钥
         base_url: API 端点 URL
+        temperature: 温度参数
 
     Returns:
         提取结果字典
     """
-    
+
     fields_str = ", ".join(fields)
 
     prompt = f"""请从以下论文片段中提取字段：{fields_str}
@@ -66,7 +67,7 @@ def extract_from_chunk(chunk: str, fields: List[str], model_name: str, api_key: 
 """
 
     try:
-        raw = call_llm(prompt, model_name, api_key, base_url)
+        raw = call_llm(prompt, model_name, api_key, base_url, temperature)
         print(f"[extract_from_chunk] 块原始返回: {raw[:500]}...")
 
         # 解析 JSON 响应
@@ -145,7 +146,7 @@ def merge_results(results: List[Dict], fields: List[str], model_name: str, api_k
         return fallback
 
 
-def extract_fields_advanced(content: str, fields: List[str], model_name: str, api_key: str, base_url: str) -> Dict:
+def extract_fields_advanced(content: str, fields: List[str], model_name: str, api_key: str, base_url: str, max_tokens: int = 10000, overlap: int = 500, temperature: float = 0.1) -> Dict:
     """
     高级字段提取：Token-aware 分块 + Map-Reduce
 
@@ -155,6 +156,9 @@ def extract_fields_advanced(content: str, fields: List[str], model_name: str, ap
         model_name: 模型名称
         api_key: API 密钥
         base_url: API 端点 URL
+        max_tokens: 分块最大 Token 数
+        overlap: 分块重叠 Token 数
+        temperature: 温度参数
 
     Returns:
         提取结果字典（包含 parsed 和 raw 字段）
@@ -162,14 +166,14 @@ def extract_fields_advanced(content: str, fields: List[str], model_name: str, ap
     print(f"[extract_fields_advanced] 开始处理，内容长度: {len(content)} 字符", flush=True)
 
     # 1. Token-aware 分块
-    chunks = split_by_tokens(content, max_tokens=10000, overlap=500)
+    chunks = split_by_tokens(content, max_tokens=max_tokens, overlap=overlap)
     print(f"[extract_fields_advanced] 分块数量: {len(chunks)}")
 
     # 2. Map 阶段：每块提取字段
     partial_results = []
     for i, chunk in enumerate(chunks):
         print(f"[extract_fields_advanced] 处理块 {i+1}/{len(chunks)}")
-        result = extract_from_chunk(chunk, fields, model_name, api_key, base_url)
+        result = extract_from_chunk(chunk, fields, model_name, api_key, base_url, temperature)
 
         # 检查是否有错误
         if result.get("error"):
@@ -198,27 +202,29 @@ def extract_fields_advanced(content: str, fields: List[str], model_name: str, ap
         }
 
 
-def call_llm(prompt: str, model_name: str = "qwen-max", api_key: str = "", base_url: str = "") -> str:
+def call_llm(prompt: str, model_name: str, api_key: str = "", base_url: str = "", temperature: float = 0.1) -> str:
     """
     调用 LLM API
 
     Args:
         prompt: 提示词
-        model_name: 模型名称，默认 qwen-max
+        model_name: 模型名称
         api_key: API 密钥
         base_url: API 端点 URL
+        temperature: 温度参数，控制输出随机性
 
     Returns:
         LLM 返回的文本
     """
 
     try:
+        print(f"[call_llm]: 创建大模型对象，模型名称为{model_name}")
         # 使用 langchain-openai 兼容各种 OpenAI 兼容 API
         llm = ChatOpenAI(
             model=model_name,
             api_key=api_key,
             base_url=base_url,
-            temperature=0.1
+            temperature=temperature
         )
 
         response = llm.invoke(prompt)

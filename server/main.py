@@ -52,6 +52,10 @@ class AnalyzeRequest(BaseModel):
     api_key: str = ""
     provider: str = ""
     base_url: str = ""
+    # 高级配置
+    temperature: float = 0.1
+    max_tokens: int = 10000
+    overlap: int = 500
 
 
 class ConfigRequest(BaseModel):
@@ -60,6 +64,9 @@ class ConfigRequest(BaseModel):
     config_name: str = "default"
     provider: str = "qwen"
     base_url: str = ""
+    temperature: float = 0.1
+    max_tokens: int = 10000
+    overlap: int = 500
 
 
 class AnalyzeResponse(BaseModel):
@@ -105,11 +112,7 @@ async def analyze(request: AnalyzeRequest):
     try:
         result = await pipeline.run_pipeline(
             file_paths=request.file_paths,
-            fields=request.fields,
-            model_name=request.model_name,
-            api_key=request.api_key,
-            provider=request.provider,
-            base_url=request.base_url
+            fields=request.fields
         )
 
         # 检查是否有错误
@@ -178,7 +181,10 @@ async def save_config(request: ConfigRequest):
             api_key=request.api_key,
             config_name=request.config_name,
             provider=request.provider,
-            base_url=request.base_url
+            base_url=request.base_url,
+            temperature=request.temperature,
+            max_tokens=request.max_tokens,
+            overlap=request.overlap
         )
         if success:
             return ConfigResponse(

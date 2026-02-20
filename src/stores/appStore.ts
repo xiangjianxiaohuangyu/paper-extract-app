@@ -16,6 +16,9 @@ export interface AppConfig {
   config_name?: string
   provider?: string
   base_url?: string
+  temperature?: number
+  max_tokens?: number
+  overlap?: number
 }
 
 // 环境检测结果类型
@@ -118,10 +121,11 @@ export const useAppStore = create<AppState>()(
 
   // 配置相关状态
   config: {
-    config_name: '自定义名称',
-    provider: 'qwen',
-    model_name: 'qwen-max',
+    config_name: '',
+    provider: 'other',
+    model_name: '',
     api_key: '',
+    base_url: '',
   },
 
   setConfig: (config) =>
