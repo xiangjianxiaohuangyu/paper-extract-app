@@ -19,7 +19,7 @@
   },
   "build": {
     "appId": "com.paper-extract.app",
-    "productName": "论文提取工具",
+    "productName": "paper-extract-app",
     "directories": {
       "output": "release"
     },
