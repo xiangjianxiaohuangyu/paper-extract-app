@@ -51,6 +51,7 @@ function startServer() {
     console.log('开发模式：启动 Python 服务:', serverPath)
     serverProcess = spawn('python', [serverPath], {
       cwd: path.join(__dirname, '../server'),
+      windowsHide: true,
       stdio: 'inherit',
     })
   } else {

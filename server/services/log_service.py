@@ -2,6 +2,7 @@
 日志服务
 负责 WebSocket 连接管理与日志推送
 """
+print(">>> import log_service...")
 from fastapi import WebSocket
 from typing import List
 

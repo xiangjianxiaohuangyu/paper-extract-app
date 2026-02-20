@@ -2,6 +2,7 @@
 LLM 服务
 负责调用大语言模型进行字段提取
 """
+print(">>> import llm_service...")
 import json
 from typing import List, Dict, Optional
 from langchain_openai import ChatOpenAI
@@ -36,6 +37,7 @@ def call_llm(prompt: str, model_name: str = "qwen-max", api_key: str = "") -> st
 
         response = llm.invoke(prompt)
         print(f"[call_llm] 响应类型: {type(response)}, content长度: {len(response.content) if response.content else 0}")
+        print(f"[call_llm] 原始响应内容: {response.content}")
         return response.content
     except Exception as e:
         import traceback
@@ -87,7 +89,7 @@ def extract_fields(content: str, fields: List[str], model_name: str = "qwen-max"
     try:
         # 调用 LLM
         raw_response = call_llm(prompt, model_name, api_key)
-        print(f"[DEBUG] LLM 原始响应前200字符: {raw_response[:200]}")
+        print(f"[DEBUG] LLM 完整原始响应: {raw_response}")
 
         # 解析 JSON 响应
         # 尝试提取 JSON 部分

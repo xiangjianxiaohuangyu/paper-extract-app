@@ -2,6 +2,11 @@
 FastAPI 主入口文件
 提供三个 API 端点：/api/analyze, /api/config/save, /api/env/check
 """
+import time
+start = time.time()
+print("========== FastAPI start ==========")
+print("start import module...")
+
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import WebSocket, WebSocketDisconnect
@@ -14,6 +19,8 @@ import pandas as pd
 
 from services import pipeline, config_service, env_service
 from services.log_service import manager
+
+print(f"import module finish, use time: {time.time() - start:.2f}s")
 
 app = FastAPI(title="论文提取 API")
 
@@ -285,5 +292,9 @@ async def websocket_logs(websocket: WebSocket):
 
 
 if __name__ == "__main__":
+    print(f"========== FastAPI start finish, use time: {time.time() - start:.2f}s ==========")
+    
+    #FastAPI 负责“写接口逻辑”，FastAPI 本身 不是服务器。
+    #Uvicorn 负责“把接口变成可访问的 HTTP 服务”。
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)

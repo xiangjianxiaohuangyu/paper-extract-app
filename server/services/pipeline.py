@@ -2,6 +2,8 @@
 流水线服务
 负责整合 PDF 解析、分块、字段提取、结果汇总的完整流程
 """
+print(">>> import pipeline...")
+import os
 from typing import List, Dict
 import tiktoken
 from . import pdf_parser, llm_service, config_service
@@ -138,7 +140,7 @@ async def run_pipeline(file_paths: List[str], fields: List[str]) -> Dict:
 
         # Step 2: 预估 token 和费用
         input_tokens, estimated_cost = await estimate_and_log_tokens(content, fields, model_name)
-        await push_log("analyze", f"文件{file_path}预估输入 token: {input_tokens}，预估费用: {estimated_cost}")
+        await push_log("analyze", f"文件{os.path.basename(file_path)}预估输入 token: {input_tokens}")
 
         # Step 3: 字段提取
         # await push_log("analyze", "正在调用模型提取字段...")

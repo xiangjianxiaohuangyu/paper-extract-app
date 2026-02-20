@@ -2,6 +2,7 @@
 环境检测服务
 负责检测 Python 版本、依赖包、API 连通性等
 """
+print(">>> import env_service...")
 import sys
 import subprocess
 from typing import Dict, List

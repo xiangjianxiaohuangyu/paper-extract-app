@@ -2,6 +2,7 @@
 配置服务
 负责保存和加载用户配置
 """
+print(">>> import config_service...")
 import json
 import os
 from datetime import datetime
