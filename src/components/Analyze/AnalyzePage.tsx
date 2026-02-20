@@ -147,12 +147,7 @@ function AnalyzePage() {
 
   // 开始解析
   const handleAnalyze = async () => {
-    console.log('[AnalyzePage] handleAnalyze 开始执行')
-    console.log('[AnalyzePage] selectedFiles:', selectedFiles)
-    console.log('[AnalyzePage] savePath:', savePath)
-
     if (selectedFiles.length === 0) {
-      console.log('[AnalyzePage] 没有选择文件，直接返回')
       return
     }
 
@@ -161,9 +156,7 @@ function AnalyzePage() {
 
     try {
       const filePaths = selectedFiles.map((f) => f.path)
-      console.log('[AnalyzePage] 调用 analyzePdf，filePaths:', filePaths)
       const result = await analyzePdf(filePaths, extractFields, savePath || undefined, saveFormat)
-      console.log('[AnalyzePage] analyzePdf 返回结果:', result)
       setAnalyzeResult(result)
     } catch (error) {
       console.error('[AnalyzePage] 解析失败:', error)

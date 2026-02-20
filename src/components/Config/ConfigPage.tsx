@@ -14,6 +14,7 @@ const QWEN_MODELS = [
   { value: 'qwen-plus', label: 'qwen-plus' },
   { value: 'qwen-turbo', label: 'qwen-turbo' },
   { value: 'qwen-long', label: 'qwen-long' },
+  { value: 'qwen1.5-110b-chat', label: 'qwen1.5-110b-chat' },
 ]
 
 const OPENAI_MODELS = [

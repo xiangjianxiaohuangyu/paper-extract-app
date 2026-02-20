@@ -67,7 +67,7 @@ async def save_config(model_name: str, api_key: str, config_name: str = "自定�
         configs = get_all_configs_from_file()
 
         # 清理配置名称，移除非法字符
-        safe_name = "".join(c for c in config_name if c.isalnum() or c in ('-', '_'))
+        safe_name = "".join(c for c in config_name if c.isalnum() or c in ('-', '_', '.'))
         if not safe_name:
             safe_name = "自定义名称"
 
@@ -118,7 +118,7 @@ async def load_config(config_name: str = "自定义名称") -> Dict:
         configs = get_all_configs_from_file()
 
         # 清理配置名称
-        safe_name = "".join(c for c in config_name if c.isalnum() or c in ('-', '_'))
+        safe_name = "".join(c for c in config_name if c.isalnum() or c in ('-', '_', '.'))
         if not safe_name:
             safe_name = "自定义名称"
 
@@ -188,7 +188,7 @@ async def delete_config(config_name: str) -> bool:
         configs = get_all_configs_from_file()
 
         # 清理配置名称
-        safe_name = "".join(c for c in config_name if c.isalnum() or c in ('-', '_'))
+        safe_name = "".join(c for c in config_name if c.isalnum() or c in ('-', '_', '.'))
 
         # 过滤掉要删除的配置
         new_configs = [cfg for cfg in configs if cfg.get('config_name') != safe_name]

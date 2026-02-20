@@ -2,9 +2,16 @@
 FastAPI 主入口文件
 提供三个 API 端点：/api/analyze, /api/config/save, /api/env/check
 """
+# Windows 下设置 stdout 编码为 UTF-8
+import sys
+import io
+if sys.platform == "win32":
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
+
 import time
 start = time.time()
 print("========== FastAPI start ==========")
+print("测试中文输出是否正常")
 print("start import module...")
 
 from fastapi import FastAPI, HTTPException
