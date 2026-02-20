@@ -11,7 +11,7 @@
     "dev:electron": "wait-on http://localhost:5173 && wait-on http://localhost:8000 && npx electron .",
     "build": "vite build",
     "build:server": "cd server && pyinstaller server.spec --workpath ../dist/server_build --distpath ../dist/server",
-    "build:all": "npm run build && npm run build:server && electron-builder",
+    "build:all": "npm run build && npm run build:server && electron-builder --publish never",
     "build:electron": "npm run build && electron-builder",
     "preview": "vite preview",
     "electron:dev": "npx electron .",
