@@ -176,6 +176,12 @@ async def run_pipeline(file_paths: List[str], fields: List[str]) -> Dict:
 
         # Step 1: 解析 PDF
         content = pdf_parser.parse_pdf(file_path)
+        await push_log("analyze", f"PDF 解析完成，内容长度: {len(content) if content else 0} 字符")
+
+        # 检查 PDF 解析是否成功
+        if not content:
+            await push_log("analyze", f"错误: PDF 文件解析失败，请检查文件是否损坏 - {os.path.basename(file_path)}")
+            continue
 
         # Step 2: 预估 token 和费用
         input_tokens, estimated_cost = await estimate_and_log_tokens(content, fields, model_name)

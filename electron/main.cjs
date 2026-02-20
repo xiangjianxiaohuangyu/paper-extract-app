@@ -102,7 +102,7 @@ function createWindow() {
   })
 
 
-  //win.webContents.openDevTools()
+  win.webContents.openDevTools()
 
   
   // // 开发模式打开 DevTools

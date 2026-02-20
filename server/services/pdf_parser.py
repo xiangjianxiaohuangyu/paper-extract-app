@@ -7,47 +7,31 @@ from typing import Optional
 from langchain_community.document_loaders import PyPDFLoader
 
 
-def parse_pdf(file_path: str) -> Optional[str]:
-    """
-    解析 PDF 文件，返回完整的文本内容
+# def parse_pdf(file_path: str) -> Optional[str]:
+#     try:
+#         loader = PyPDFLoader(file_path)
+#         documents = loader.load()
+#         # 合并所有页面的文本内容
+#         content = "\n".join([doc.page_content for doc in documents])
+#         return content
+#     except Exception as e:
+#         print(f"PDF 解析失败: {e}")
+#         return None
 
-    Args:
-        file_path: PDF 文件路径
 
-    Returns:
-        PDF 的完整文本内容
-    """
+
+def parse_pdf(file_path: str) -> str:
     try:
+        print(f"解析 PDF 路径: {file_path}")
         loader = PyPDFLoader(file_path)
         documents = loader.load()
-        # 合并所有页面的文本内容
+        if not documents:
+            print("loader.load() 返回空文档列表")
         content = "\n".join([doc.page_content for doc in documents])
+        if not content.strip():
+            print("解析内容为空")
         return content
     except Exception as e:
         print(f"PDF 解析失败: {e}")
-        return None
-
-
-def get_pdf_info(file_path: str) -> dict:
-    """
-    获取 PDF 文件的基本信息
-
-    Args:
-        file_path: PDF 文件路径
-
-    Returns:
-        包含页数、标题等信息的字典
-    """
-    try:
-        loader = PyPDFLoader(file_path)
-        documents = loader.load()
-        return {
-            "pages": len(documents),
-            "success": True
-        }
-    except Exception as e:
-        return {
-            "success": False,
-            "error": str(e)
-        }
+        return ""
 

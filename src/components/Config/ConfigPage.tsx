@@ -281,7 +281,7 @@ function ConfigPage() {
       setTestMessage('✗ 测试失败: 网络错误')
     } finally {
       setIsTesting(false)
-      setTimeout(() => setTestMessage(''), 5000)
+      setTimeout(() => setTestMessage(''), 10000)
     }
   }
 
@@ -505,7 +505,7 @@ function ConfigPage() {
           )}
           {testMessage && (
             <span
-              className={`text-sm ${
+              className={`text-sm whitespace-pre-wrap ${
                 testMessage.includes('✓') ? 'text-green-600' : 'text-red-600'
               }`}
             >

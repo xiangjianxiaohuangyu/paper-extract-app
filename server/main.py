@@ -25,7 +25,7 @@ from datetime import datetime
 import pandas as pd
 
 from services import pipeline, config_service, env_service
-from services.log_service import manager
+from services.log_service import manager, push_log
 
 #print(f"import module finish, use time: {time.time() - start:.2f}s")
 
@@ -72,8 +72,6 @@ class ConfigRequest(BaseModel):
 class AnalyzeResponse(BaseModel):
     success: bool
     message: str
-    data: Optional[dict] = None
-
 
 class ConfigResponse(BaseModel):
     success: bool
@@ -89,6 +87,7 @@ class EnvCheckResponse(BaseModel):
 class TestConnectionResponse(BaseModel):
     success: bool
     message: str
+    data: Optional[dict] = None  # 包含大模型原始输出
 
 
 @app.get("/")
@@ -322,7 +321,8 @@ async def test_connection(request: ConfigRequest):
 
         return TestConnectionResponse(
             success=True,
-            message="连接成功"
+            message="连接成功",
+
         )
     except Exception as e:
         return TestConnectionResponse(

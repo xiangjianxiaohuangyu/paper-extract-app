@@ -18,6 +18,12 @@ try:
 except:
     tiktoken_ext_datas = []
 
+# 收集 pypdf 的数据（用于 PDF 解析）
+try:
+    pypdf_datas = collect_data_files('pypdf')
+except:
+    pypdf_datas = []
+
 # 自动收集所有子模块
 hiddenimports = (
     collect_submodules('uvicorn') +
@@ -34,7 +40,8 @@ hiddenimports = (
     collect_submodules('dotenv') +
     collect_submodules('langchain_community.document_loaders') +
     collect_submodules('tiktoken_ext') +
-    collect_submodules('tiktoken_ext.openai_public')
+    collect_submodules('tiktoken_ext.openai_public') +
+    collect_submodules('pypdf')
 ) + tiktoken_hiddenimports
 
 # 收集包的元数据（用于环境检测）
@@ -49,8 +56,10 @@ datas = collect_data_files('dotenv') + \
     collect_data_files('openai') + \
     collect_data_files('pandas') + \
     collect_data_files('openpyxl') + \
+    collect_data_files('pypdf') + \
     tiktoken_datas + \
-    tiktoken_ext_datas
+    tiktoken_ext_datas + \
+    pypdf_datas
 
 a = Analysis(
     ['run.py'],
