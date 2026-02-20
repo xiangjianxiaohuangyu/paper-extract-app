@@ -1,6 +1,9 @@
 # 基础环境
 python-dotenv>=1.0.1
 
+# 打包工具
+pyinstaller>=6.0.0
+
 # Web 服务
 fastapi>=0.115.0
 uvicorn[standard]>=0.30.0
