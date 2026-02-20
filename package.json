@@ -18,7 +18,7 @@
     "server": "python server/run.py",
     "bump": "npm version patch -m \"chore(release): %s\"",
     "commit:all": "git add -A && git commit -F .gitmessage || true",
-    "release": "npm run commit:all && npm run bump && git push --follow-tags"
+    "release": "npm run commit:all && npm run bump && npm run build:all && git push --follow-tags"
   },
   "build": {
     "appId": "com.paper-extract.app",
