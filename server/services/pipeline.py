@@ -63,7 +63,7 @@ def estimate_cost(input_tokens: int, output_tokens: int = 1000, model_name: str 
 
 async def estimate_and_log_tokens(content: str, fields: List[str], model_name: str = "qwen-max") -> tuple:
     """
-    预估 token 数量和费用
+    预估 token 数量和费用（使用分块模式）
 
     Args:
         content: PDF 文本内容
@@ -73,25 +73,53 @@ async def estimate_and_log_tokens(content: str, fields: List[str], model_name: s
     Returns:
         (input_tokens, estimated_cost): token 数量和费用字符串
     """
-    # 构建 prompt（与 llm_service.extract_fields 保持一致）
-    fields_str = ", ".join(fields)
-    prompt = f"""请从以下论文内容中提取指定字段：{fields_str}
+    # 使用与 llm_service.extract_fields_advanced 相同的分块逻辑
+    from .llm_service import split_by_tokens
 
-请严格按照以下 JSON 格式返回，不要包含其他内容：
+    fields_str = ", ".join(fields)
+    chunks = split_by_tokens(content, max_tokens=3000, overlap=300)
+
+    total_input_tokens = 0
+    chunk_count = len(chunks)
+
+    # 计算每个 chunk 的 prompt token
+    for chunk in chunks:
+        # Map 阶段 prompt
+        map_prompt = f"""请从以下论文片段中提取字段：{fields_str}
+
+严格返回 JSON 格式，不要包含任何解释或额外内容。如果某个字段不存在，请返回空字符串。
+
+片段内容：
+{chunk}
+"""
+        map_tokens = estimate_tokens(map_prompt)
+        total_input_tokens += map_tokens
+
+    # Reduce 阶段 prompt（汇总所有部分结果）
+    reduce_prompt = f"""以下是多个论文片段提取结果：
+
+[部分结果]
+
+请合并为最终结果。
+规则：
+1. 如果多个片段都有值，选择最完整的（非空）值。
+2. 不要丢失任何信息。
+3. 严格返回 JSON 格式，不要包含任何解释。
+
+输出格式：
 {{
-    "字段名": "提取的内容",
+    "字段名": "合并后的值",
     ...
 }}
-
-如果某个字段不存在，请返回空字符串。
-
-论文内容：
-{content[:150000]}
 """
-    input_tokens = estimate_tokens(prompt)
-    estimated_cost = estimate_cost(input_tokens, model_name=model_name)
+    reduce_tokens = estimate_tokens(reduce_prompt)
+    total_input_tokens += reduce_tokens
 
-    return input_tokens, estimated_cost
+    estimated_cost = estimate_cost(total_input_tokens, model_name=model_name)
+
+    print(f"[estimate_and_log_tokens] 分块数量: {chunk_count}, 总输入 token: {total_input_tokens}, 费用: {estimated_cost}")
+
+    return total_input_tokens, estimated_cost
 
 
 async def run_pipeline(file_paths: List[str], fields: List[str]) -> Dict:
@@ -145,7 +173,7 @@ async def run_pipeline(file_paths: List[str], fields: List[str]) -> Dict:
         # Step 3: 字段提取
         # await push_log("analyze", "正在调用模型提取字段...")
 
-        result = llm_service.extract_fields(content, fields, model_name, api_key)
+        result = llm_service.extract_fields_advanced(content, fields, model_name, api_key)
         extracted = result.get("parsed", {})
         raw_response = result.get("raw", "")
         # await push_log("analyze", f"模型原始返回: {raw_response[:500]}...")
