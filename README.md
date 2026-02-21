@@ -4,15 +4,17 @@
 
 ### 基于 LLM 的论文信息提取桌面工具
 
-[![Website](https://img.shields.io/badge/🌐-Website-xiangjianxiaohuangyu.top-4CAF50?logo=world)](https://xiangjianxiaohuangyu.top/)
-
-</div>
+[![Website](https://img.shields.io/badge/-Website-4CAF50?style=flat&logo=link)](https://xiangjianxiaohuangyu.top/)
 
 ---
 
 [English](./README.md) | [中文](./README.zh.md)
 
 ---
+
+
+</div>
+
 
 ## Project Overview
 
