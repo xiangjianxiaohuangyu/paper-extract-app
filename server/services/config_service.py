@@ -5,6 +5,7 @@
 #print(">>> import config_service...")
 import json
 import os
+import sys
 from datetime import datetime
 from typing import Dict, List
 from .log_service import push_log
@@ -12,10 +13,17 @@ from .log_service import push_log
 
 # 获取配置文件的完整路径
 def get_config_file_path():
-    """获取配置文件路径"""
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-    project_root = os.path.dirname(current_dir)
-    config_dir = os.path.join(project_root, 'configs')
+    """获取配置文件路径（使用用户数据目录，确保持久化保存）"""
+    # 优先使用用户数据目录
+    if sys.platform == 'win32':
+        # Windows: 使用 AppData/Local 目录
+        config_dir = os.path.join(os.environ.get('LOCALAPPDATA', os.path.expanduser('~')), 'paper-extract-app', 'configs')
+    elif sys.platform == 'darwin':
+        # macOS: 使用 ~/Library/Application Support
+        config_dir = os.path.join(os.path.expanduser('~'), 'Library', 'Application Support', 'paper-extract-app', 'configs')
+    else:
+        # Linux: 使用 ~/.config
+        config_dir = os.path.join(os.path.expanduser('~'), '.config', 'paper-extract-app', 'configs')
 
     # 如果目录不存在，创建它
     if not os.path.exists(config_dir):
