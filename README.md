@@ -11,31 +11,33 @@
 ### 项目简介 / Project Overview
 
 AI Paper Extractor 是一款基于 Electron + React + Python + LLM 构建的跨平台桌面工具，用于从学术论文中自动提取结构化信息，并支持导出为标准化数据结果。
+
 AI Paper Extractor is a cross-platform desktop tool built with Electron + React + Python + LLM. It automatically extracts structured information from academic papers and exports standardized data results.
 
 该项目定位为：
+
 This project is positioned as:
 
-面向科研人员的论文信息结构化工具（A structured paper information tool for researchers）
+1、面向科研人员的论文信息结构化工具（A structured paper information tool for researchers）
 
-面向开发者的可扩展 LLM 桌面应用模板（An extensible LLM desktop application template for developers）
+2、面向开发者的可扩展 LLM 桌面应用模板（An extensible LLM desktop application template for developers）
 
-前后端解耦 + 可独立打包部署的工程化示例（An engineering example with decoupled frontend/backend and independent packaging and deployment）
+3、前后端解耦 + 可独立打包部署的工程化示例（An engineering example with decoupled frontend/backend and independent packaging and deployment）
 
 ### 核心亮点 / Core Features
 
 #### 1. 本地桌面架构（非纯 Web）/ Local Desktop Architecture (Not Pure Web)
 
-基于 Electron 构建
+·基于 Electron 构建
 Built with Electron
 
-前端使用 Vite + React + TypeScript
+·前端使用 Vite + React + TypeScript
 Frontend: Vite + React + TypeScript
 
-后端使用 Python FastAPI
+·后端使用 Python FastAPI
 Backend: Python FastAPI
 
-支持 PyInstaller 打包为独立可执行文件
+·支持 PyInstaller 打包为独立可执行文件
 Supports PyInstaller packaging to standalone executable
 
 **优势：**
@@ -169,9 +171,9 @@ Auto-detect backend service status
 提供异常提示
 Provide exception alerts
 
-### 生产模式（用户使用）/ Production Mode (For Users)
+### 生产模式（Production Mode）
 
-#### 下载 / Download
+#### 下载（Download）
 
 从 GitHub Releases 下载构建完成的安装包：
 Download the built installer from Git Releases:
@@ -181,7 +183,7 @@ Download the built installer from Git Releases:
 安装后即可使用，无需手动配置 Python 环境。
 After installation, you can use it directly without manually configuring Python environment.
 
-#### 生产模式架构 / Production Architecture
+#### 生产模式架构（Production Architecture）
 
 ```
 Electron App
@@ -191,24 +193,19 @@ backend.exe (PyInstaller 打包 / PyInstaller packaged)
 FastAPI 服务 / FastAPI Service (localhost:8000)
 ```
 
-**特点：**
-**Features:**
+**特点（Features）：**
 
-后端已编译为可执行文件
-Backend compiled to executable
+后端已编译为可执行文件（Backend compiled to executable）
 
-无需 Python 环境
-No Python environment required
+无需 Python 环境（No Python environment required）
 
-一键安装运行
-One-click installation and running
+一键安装运行（One-click installation and running）
 
-适合非开发人员
-Suitable for non-developers
+适合非开发人员（Suitable for non-developers）
 
-### 开发模式（开发者使用）/ Development Mode (For Developers)
+### 开发模式（Development Mode）
 
-#### 环境要求 / Environment Requirements
+#### 环境要求（Environment Requirements） 
 
 Node.js 18+
 
@@ -216,20 +213,20 @@ Python 3.10+
 
 Git
 
-#### 克隆项目 / Clone Project
+#### 克隆项（Clone Project）
 
 ```bash
 git clone https://github.com/xiangjianxiaohuangyu/paper-extract-app.git
 cd paper-extract-app
 ```
 
-#### 安装前端依赖 / Install Frontend Dependencies
+#### 安装前端依赖（Install Frontend Dependencies）
 
 ```bash
 npm install
 ```
 
-#### 安装后端依赖 / Install Backend Dependencies
+#### 安装后端依赖（Install Backend Dependencies）
 
 ```bash
 cd server
@@ -237,7 +234,7 @@ pip install -r requirements.txt
 cd ..
 ```
 
-#### 启动开发模式 / Start Development Mode
+#### 启动开发模式（Start Development Mode）
 
 ```bash
 npm run dev
@@ -247,22 +244,19 @@ npm run dev
 This will simultaneously start:
 
 Vite Dev Server → http://localhost:5173
-Vite Dev Server → http://localhost:5173
 
-FastAPI Backend → http://localhost:8000
 FastAPI Backend → http://localhost:8000
 
 Electron Desktop App
-Electron Desktop App
 
-#### 单独运行组件 / Run Components Individually
+#### 单独运行组件（Run Components Individually）
 
-**仅前端 / Frontend only:**
+**仅前端（Frontend only）**
 ```bash
 npm run dev:vite
 ```
 
-**仅后端 / Backend only:**
+**仅后端（Backend only）**
 ```bash
 npm run server
 ```
@@ -271,26 +265,26 @@ npm run server
 python server/run.py
 ```
 
-**仅 Electron / Electron only:**
+**仅 Electron（Electron only）**
 ```bash
 npm run electron:dev
 ```
 
-### 构建发布流程 / Build & Release Process
+### 构建发布流程（Build & Release Process）
 
-#### 1. 构建前端 / Build Frontend
+#### 1. 构建前端（Build Frontend）
 
 ```bash
 npm run build
 ```
 
-#### 2. 构建后端（PyInstaller）/ Build Backend (PyInstaller)
+#### 2. 构建后端（Build Backend）
 
 ```bash
 npm run build:server
 ```
 
-#### 3. 构建完整安装包 / Build Complete Installer
+#### 3. 构建完整安装包（Build Complete Installer）
 
 ```bash
 npm run build:all
@@ -301,9 +295,9 @@ After build completes, the installer is located in:
 
 `release/`
 
-### 技术栈 / Tech Stack
+### 技术栈（Tech Stack）
 
-**前端 / Frontend:**
+**前端（Frontend）**
 
 Electron 28
 
@@ -317,7 +311,7 @@ Ant Design 5
 
 Zustand
 
-**后端 / Backend:**
+**后端（Backend）**
 
 Python 3.10+
 
@@ -329,7 +323,7 @@ LangChain (optional extension)
 
 PyInstaller
 
-### 项目结构 / Project Structure
+### 项目结构（Project Structure）
 
 ```
 paper-extract-app/
@@ -340,7 +334,7 @@ paper-extract-app/
 └─ package.json
 ```
 
-### 适用场景 / Use Cases
+### 适用场景（Use Cases）
 
 批量论文整理（Batch paper organization）
 
@@ -352,7 +346,7 @@ LLM 工程化实践（LLM engineering practice）
 
 桌面 AI 工具开发模板（Desktop AI tool development template）
 
-### 作者信息 / Author
+### 作者信息 （Author）
 
 作者（Name）：lzp
 
@@ -360,12 +354,12 @@ LLM 工程化实践（LLM engineering practice）
 
 邮箱（Email）：zhipenglin02@163.com
 
-技术方向：（例如：AI 工程化 / 桌面应用架构 / LLM 应用开发）
-Technical Focus: (e.g., AI Engineering / Desktop Application Architecture / LLM Application Development)
+技术方向（Technical Focus）：AI 工程化 / 桌面应用架构 / LLM 应用开发（AI Engineering / Desktop Application Architecture / LLM Application Development）
 
-### 技术支持 / Support
+### 技术支持（Support）
 
 如有问题或建议，请提交 Issue：
+
 For issues or suggestions, please submit an Issue:
 
 https://github.com/xiangjianxiaohuangyu/paper-extract-app/issues
