@@ -14,6 +14,8 @@ AI Paper Extractor 是一款基于 Electron + React + Python + LLM 构建的跨�
 2. 面向开发者的可扩展 LLM 桌面应用模板
 3. 前后端解耦 + 可独立打包部署的工程化示例
 
+![项目概览](./README_png/project-overview.png)
+
 ## 核心亮点
 
 ### 1. 本地桌面架构
@@ -48,6 +50,8 @@ AI Paper Extractor 是一款基于 Electron + React + Python + LLM 构建的跨�
 - 支持自定义 Prompt 扩展
 - 兼容 OpenAI API 协议
 
+![论文解析](./README_png/paper-parsing.png)
+
 ### 3. 多模型兼容架构
 
 支持：
@@ -58,6 +62,8 @@ AI Paper Extractor 是一款基于 Electron + React + Python + LLM 构建的跨�
 - 本地部署模型（如 vLLM / Ollama / 企业私有模型）
 
 模型配置与业务逻辑解耦，支持多配置保存与切换。
+
+![多模型支持](./README_png/multi-model.png)
 
 ### 4. 完整工程化构建流程
 

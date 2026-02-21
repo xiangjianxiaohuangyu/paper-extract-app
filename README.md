@@ -1,4 +1,14 @@
+<div align="center">
+
 # AI Paper Extractor
+
+### 基于 LLM 的论文信息提取桌面工具
+
+[![Website](https://img.shields.io/badge/🌐-Website-xiangjianxiaohuangyu.top-4CAF50?logo=world)](https://xiangjianxiaohuangyu.top/)
+
+</div>
+
+---
 
 [English](./README.md) | [中文](./README.zh.md)
 
@@ -13,6 +23,8 @@ This project is positioned as:
 1. A structured paper information tool for researchers
 2. An extensible LLM desktop application template for developers
 3. An engineering example with decoupled frontend/backend and independent packaging and deployment
+
+![Project Overview](./README_png/project-overview.png)
 
 ## Core Features
 
@@ -48,6 +60,8 @@ Automatically extracts from PDFs:
 - Supports custom Prompt extension
 - Compatible with OpenAI API protocol
 
+![Paper Parsing](./README_png/paper-parsing.png)
+
 ### 3. Multi-Model Compatible Architecture
 
 Supports:
@@ -58,6 +72,8 @@ Supports:
 - Locally deployed models (e.g., vLLM / Ollama / Enterprise private models)
 
 Model configuration is decoupled from business logic, supporting multiple configuration saves and switches.
+
+![Multi-Model Support](./README_png/multi-model.png)
 
 ### 4. Complete Engineering Build Process
 
