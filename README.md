@@ -25,6 +25,74 @@
 
 从 [Releases](https://github.com/xiangjianxiaohuangyu/paper-extract-app/releases) 页面下载安装包。
 
+## 开发模式
+
+### 环境要求
+
+- Node.js 18+
+- Python 3.10+
+- Git
+
+### 克隆仓库
+
+```bash
+git clone https://github.com/xiangjianxiaohuangyu/paper-extract-app.git
+cd paper-extract-app
+```
+
+### 安装前端依赖
+
+```bash
+npm install
+```
+
+### 安装后端依赖
+
+```bash
+cd server
+pip install -r requirements.txt
+cd ..
+```
+
+### 启动开发模式
+
+```bash
+npm run dev
+```
+
+这将同时启动：
+- Vite 开发服务器 (http://localhost:5173)
+- Python 后端服务 (http://localhost:8000)
+- Electron 桌面应用
+
+### 单独运行
+
+- **仅前端**: `npm run dev:vite`
+- **仅后端**: `npm run server` 或 `python server/run.py`
+- **仅 Electron**: `npm run electron:dev`
+
+## 构建发布
+
+### 构建前端
+
+```bash
+npm run build
+```
+
+### 构建后端 (PyInstaller)
+
+```bash
+npm run build:server
+```
+
+### 构建完整安装包
+
+```bash
+npm run build:all
+```
+
+构建完成后，安装包位于 `release` 目录下。
+
 ## 配置说明
 
 ### 通义千问
