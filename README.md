@@ -8,155 +8,154 @@
 
 ---
 
-[English](./README.md) | [中文](./README.zh.md)
+[English](./README.en.md) | [中文](./README.md)
 
 ---
 
 
 </div>
 
+## 项目简介
 
-## Project Overview
+AI Paper Extractor 是一款基于 Electron + React + Python + LLM 构建的跨平台桌面工具，用于从学术论文中自动提取结构化信息，并支持导出为标准化数据结果。
 
-AI Paper Extractor is a cross-platform desktop tool built with Electron + React + Python + LLM. It automatically extracts structured information from academic papers and exports standardized data results.
+该项目定位为：
 
-This project is positioned as:
+1. 面向科研人员的论文信息结构化工具
+2. 面向开发者的可扩展 LLM 桌面应用模板
+3. 前后端解耦 + 可独立打包部署的工程化示例
 
-1. A structured paper information tool for researchers
-2. An extensible LLM desktop application template for developers
-3. An engineering example with decoupled frontend/backend and independent packaging and deployment
+![项目概览](./README_png/project-overview.png)
 
-![Project Overview](./README_png/project-overview.png)
+## 核心亮点
 
-## Core Features
+### 1. 本地桌面架构
 
-### 1. Local Desktop Architecture
+- 基于 Electron 构建
+- 前端使用 Vite + React + TypeScript
+- 后端使用 Python FastAPI
+- 支持 PyInstaller 打包为独立可执行文件
 
-- Built with Electron
-- Frontend: Vite + React + TypeScript
-- Backend: Python FastAPI
-- Supports PyInstaller packaging to standalone executable
+**优势：**
 
-**Advantages:**
+- 不依赖浏览器环境
+- 可本地离线部署（模型 API 除外）
+- 适用于企业内网或科研环境
 
-- No browser dependency
-- Can be deployed offline locally (except for model API)
-- Suitable for enterprise intranet or research environments
+### 2. AI 驱动的结构化论文解析
 
-### 2. AI-Powered Structured Paper Parsing
+支持从 PDF 中自动提取：
 
-Automatically extracts from PDFs:
+- 论文标题
+- 作者信息
+- 摘要
+- 研究方法
+- 实验结果
+- 结论
+- 自定义字段（支持扩展）
 
-- Paper Title
-- Author Information
-- Abstract
-- Research Methods
-- Experimental Results
-- Conclusions
-- Custom Fields (extensible)
+**技术特性：**
 
-**Technical Features:**
+- 基于 pypdf 文本解析
+- 支持多模型供应商
+- 支持自定义 Prompt 扩展
+- 兼容 OpenAI API 协议
 
-- Based on pypdf text parsing
-- Supports multiple model providers
-- Supports custom Prompt extension
-- Compatible with OpenAI API protocol
+![论文解析](./README_png/paper-parsing.png)
 
-![Paper Parsing](./README_png/paper-parsing.png)
+### 3. 多模型兼容架构
 
-### 3. Multi-Model Compatible Architecture
+支持：
 
-Supports:
-
-- Qwen
+- 通义千问
 - OpenAI
-- Any model service compatible with OpenAI API protocol
-- Locally deployed models (e.g., vLLM / Ollama / Enterprise private models)
+- 任意兼容 OpenAI API 协议的模型服务
+- 本地部署模型（如 vLLM / Ollama / 企业私有模型）
 
-Model configuration is decoupled from business logic, supporting multiple configuration saves and switches.
+模型配置与业务逻辑解耦，支持多配置保存与切换。
 
-![Multi-Model Support](./README_png/multi-model.png)
+![多模型支持](./README_png/multi-model.png)
 
-### 4. Complete Engineering Build Process
+### 4. 完整工程化构建流程
 
-Supports:
+支持：
 
-- Hot reload in development mode
-- Independent backend packaging
-- Full installer build
-- Automatic environment detection
-- Frontend/backend separated deployment
+- 开发模式热更新
+- 后端独立打包
+- 全量安装包构建
+- 自动环境检测
+- 前后端分离部署
 
-## Interface Overview
+## 界面功能说明
 
-**Analysis Page**
+**分析页面**
 
-- Drag and drop PDF upload
-- Batch processing
-- One-click structured extraction
+- 拖拽上传 PDF
+- 批量处理
+- 一键结构化提取
 
-**Configuration Page**
+**配置页面**
 
-- Select model provider
-- Fill in API Key
-- Custom Base URL
-- Multi-configuration management
+- 选择模型供应商
+- 填写 API Key
+- 自定义 Base URL
+- 多配置管理
 
-**Environment Detection**
+**环境检测**
 
-- Auto-detect Python environment
-- Auto-detect backend service status
-- Provide exception alerts
+- 自动检测 Python 环境
+- 自动检测后端服务状态
+- 提供异常提示
 
-## Production Mode
+## 生产模式
 
-### Download
+### 下载
 
-Download the built installer from GitHub Releases:
+从 GitHub Releases 下载构建完成的安装包：
 
 👉 https://github.com/xiangjianxiaohuangyu/paper-extract-app/releases
 
-After installation, you can use it directly without manually configuring Python environment.
+安装后即可使用，无需手动配置 Python 环境。
 
-### Production Architecture
+### 生产模式架构
 
 ```
 Electron App
    ↓
-backend.exe (PyInstaller packaged)
+backend.exe (PyInstaller 打包)
    ↓
-FastAPI Service (localhost:8000)
+FastAPI 服务 (localhost:8000)
 ```
 
-**Features:**
+**特点：**
 
-- Backend compiled to executable
-- No Python environment required
-- One-click installation and running
-- Suitable for non-developers
+- 后端已编译为可执行文件
+- 无需 Python 环境
+- 一键安装运行
+- 适合非开发人员
 
-## Development Mode
+## 开发模式
 
-### Environment Requirements
+### 环境要求
 
 - Node.js 18+
 - Python 3.10+
 - Git
 
-### Clone Project
+### 克隆项目
 
 ```bash
 git clone https://github.com/xiangjianxiaohuangyu/paper-extract-app.git
 cd paper-extract-app
 ```
 
-### Install Frontend Dependencies
+### 安装前端依赖
 
 ```bash
 npm install
 ```
 
-### Install Backend Dependencies
+### 安装后端依赖
 
 ```bash
 cd server
@@ -164,69 +163,69 @@ pip install -r requirements.txt
 cd ..
 ```
 
-### Start Development Mode
+### 启动开发模式
 
 ```bash
 npm run dev
 ```
 
-This will simultaneously start:
+将同时启动：
 
 - Vite Dev Server → http://localhost:5173
 - FastAPI Backend → http://localhost:8000
 - Electron Desktop App
 
-### Run Components Individually
+### 单独运行组件
 
-**Frontend only:**
+**仅前端：**
 
 ```bash
 npm run dev:vite
 ```
 
-**Backend only:**
+**仅后端：**
 
 ```bash
 npm run server
 ```
 
-or:
+或：
 
 ```bash
 python server/run.py
 ```
 
-**Electron only:**
+**仅 Electron：**
 
 ```bash
 npm run electron:dev
 ```
 
-## Build & Release Process
+## 构建发布流程
 
-### 1. Build Frontend
+### 1. 构建前端
 
 ```bash
 npm run build
 ```
 
-### 2. Build Backend
+### 2. 构建后端
 
 ```bash
 npm run build:server
 ```
 
-### 3. Build Complete Installer
+### 3. 构建完整安装包
 
 ```bash
 npm run build:all
 ```
 
-After build completes, the installer is located in: `release/`
+构建完成后，安装包位于：`release/`
 
-## Tech Stack
+## 技术栈
 
-**Frontend:**
+**前端：**
 
 - Electron 28
 - React 18
@@ -235,42 +234,42 @@ After build completes, the installer is located in: `release/`
 - Ant Design 5
 - Zustand
 
-**Backend:**
+**后端：**
 
 - Python 3.10+
 - FastAPI
 - pypdf
-- LangChain (optional extension)
+- LangChain（可选扩展）
 - PyInstaller
 
-## Project Structure
+## 项目结构
 
 ```
 paper-extract-app/
 ├─ electron/
-├─ src/                # React Frontend
-├─ server/             # Python Backend
-├─ release/            # Build Output
+├─ src/                # React 前端
+├─ server/             # Python 后端
+├─ release/            # 构建产物
 └─ package.json
 ```
 
-## Use Cases
+## 适用场景
 
-- Batch paper organization
-- Scientific research information structuring
-- Academic data preprocessing
-- LLM engineering practice
-- Desktop AI tool development template
+- 批量论文整理
+- 科研信息结构化
+- 学术数据预处理
+- LLM 工程化实践
+- 桌面 AI 工具开发模板
 
-## Author
+## 作者
 
-- Name: lzp
-- Website: https://xiangjianxiaohuangyu.top/
-- Email: zhipenglin02@163.com
-- Technical Focus: AI Engineering / Desktop Application Architecture / LLM Application Development
+- 作者：lzp
+- 个人网站：https://xiangjianxiaohuangyu.top/
+- 邮箱：zhipenglin02@163.com
+- 技术方向：AI 工程化 / 桌面应用架构 / LLM 应用开发
 
-## Support
+## 技术支持
 
-For issues or suggestions, please submit an Issue:
+如有问题或建议，请提交 Issue：
 
 https://github.com/xiangjianxiaohuangyu/paper-extract-app/issues
