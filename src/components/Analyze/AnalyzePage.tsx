@@ -38,6 +38,7 @@ function AnalyzePage() {
     setAnalyzeResult,
     terminalLogs,
     clearLogs,
+    config,
   } = useAppStore()
 
   // 处理文件选择（使用 Electron API 支持文件夹）
@@ -306,8 +307,8 @@ function AnalyzePage() {
         </div>
       </div>
 
-      {/* 保存格式设置 */}
-      <div className="card p-4 mb-6">
+      {/* 保存格式 */}
+      <div className="card p-4 mb-4">
         <h3 className="text-sm font-medium text-text-secondary mb-3">保存格式</h3>
         <div className="flex gap-6">
           <label className="inline-flex items-center gap-2 cursor-pointer">
@@ -332,6 +333,19 @@ function AnalyzePage() {
             />
             <span className="text-text-primary text-sm">Excel</span>
           </label>
+        </div>
+      </div>
+
+      {/* 当前配置 */}
+      <div className="card p-4 mb-6">
+        <h3 className="text-sm font-medium text-text-secondary mb-3">当前配置</h3>
+        <div className="text-xs text-text-muted space-y-0.5">
+          <p>模型: {config.model_name || '未设置'}</p>
+          <p>提供商: {config.provider || '未设置'}</p>
+          <p>API 端点: {config.base_url || '未设置'}</p>
+          <p>Temperature: {config.temperature ?? '未设置'}</p>
+          <p>Max Tokens: {config.max_tokens ?? '未设置'}</p>
+          <p>Overlap: {config.overlap ?? '未设置'}</p>
         </div>
       </div>
 
