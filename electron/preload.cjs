@@ -93,4 +93,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
     return result.filePaths[0]
   },
+
+  // 在浏览器中打开外部链接
+  openExternal: async (url) => {
+    return await ipcRenderer.invoke('shell:openExternal', url)
+  },
 })

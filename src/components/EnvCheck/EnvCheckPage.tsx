@@ -1,6 +1,7 @@
 import { useAppStore } from '@/stores/appStore'
 import { checkEnv } from '@/api'
 import TerminalPanel from '@/components/Terminal'
+import { CheckCircle, AlertTriangle, XCircle, CircleDashed, Terminal } from 'lucide-react'
 
 function EnvCheckPage() {
   const {
@@ -33,31 +34,41 @@ function EnvCheckPage() {
   const renderStatusIcon = (status?: string) => {
     switch (status) {
       case 'ok':
-        return <span className="text-green-500">✓</span>
+        return <CheckCircle className="w-5 h-5 text-state-success" />
       case 'warning':
-        return <span className="text-yellow-500">⚠</span>
+        return <AlertTriangle className="w-5 h-5 text-state-warning" />
       case 'error':
-        return <span className="text-red-500">✗</span>
+        return <XCircle className="w-5 h-5 text-state-error" />
       default:
-        return <span className="text-gray-400">-</span>
+        return <CircleDashed className="w-5 h-5 text-text-muted" />
     }
   }
 
   return (
     <div className="p-6">
-      <h2 className="text-2xl font-semibold text-gray-800 mb-6">环境检测</h2>
+      <h2 className="text-xl font-semibold text-text-primary mb-6">环境检测</h2>
 
       {/* 检测按钮 */}
       <button
         onClick={handleCheck}
         disabled={isChecking}
-        className={`px-6 py-3 rounded-lg font-medium transition-colors ${
+        className={`px-6 py-3 rounded-lg font-medium transition-all duration-200 flex items-center gap-2 ${
           isChecking
-            ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-            : 'bg-blue-600 text-white hover:bg-blue-700'
+            ? 'bg-gray-200 text-text-muted cursor-not-allowed'
+            : 'btn-primary'
         }`}
       >
-        {isChecking ? '检测中...' : '检测环境'}
+        {isChecking ? (
+          <>
+            <CircleDashed className="w-5 h-5 animate-spin" />
+            检测中...
+          </>
+        ) : (
+          <>
+            <Terminal className="w-5 h-5" />
+            检测环境
+          </>
+        )}
       </button>
 
       {/* 检测结果展示 */}
@@ -65,13 +76,13 @@ function EnvCheckPage() {
         <div className="mt-6 space-y-4">
           {/* Python 版本 */}
           {envCheckResult.python && (
-            <div className="bg-white border border-gray-200 rounded-lg p-4">
+            <div className="card p-4">
               <div className="flex items-center justify-between">
-                <h3 className="text-lg font-medium text-gray-700">Python 环境</h3>
+                <h3 className="text-base font-medium text-text-secondary">Python 环境</h3>
                 {renderStatusIcon(envCheckResult.python.status)}
               </div>
-              <div className="mt-2 text-sm text-gray-600">
-                <p>版本: {envCheckResult.python.version}</p>
+              <div className="mt-2 text-sm text-text-secondary">
+                <p>版本: <span className="font-mono text-text-primary">{envCheckResult.python.version}</span></p>
                 <p>状态: {envCheckResult.python.message}</p>
               </div>
             </div>
@@ -79,8 +90,8 @@ function EnvCheckPage() {
 
           {/* 依赖包 */}
           {envCheckResult.dependencies && (
-            <div className="bg-white border border-gray-200 rounded-lg p-4">
-              <h3 className="text-lg font-medium text-gray-700 mb-3">
+            <div className="card p-4">
+              <h3 className="text-base font-medium text-text-secondary mb-3">
                 Python 依赖
               </h3>
               <div className="space-y-2">
@@ -88,19 +99,22 @@ function EnvCheckPage() {
                   ([name, info]: [string, any]) => (
                     <div
                       key={name}
-                      className="flex items-center justify-between text-sm"
+                      className="flex items-center justify-between text-sm py-2 border-b border-gray-50 last:border-0"
                     >
-                      <span className="text-gray-600">{name}</span>
+                      <span className="text-text-primary font-mono">{name}</span>
                       <div className="flex items-center gap-2">
                         {info.installed ? (
                           <>
-                            <span className="text-green-500">✓</span>
-                            <span className="text-gray-500">
+                            <CheckCircle className="w-4 h-4 text-state-success" />
+                            <span className="text-text-muted">
                               v{info.version || 'unknown'}
                             </span>
                           </>
                         ) : (
-                          <span className="text-red-500">✗ 未安装</span>
+                          <span className="text-state-error flex items-center gap-1">
+                            <XCircle className="w-4 h-4" />
+                            未安装
+                          </span>
                         )}
                       </div>
                     </div>
@@ -115,7 +129,8 @@ function EnvCheckPage() {
 
       {/* 初始提示 */}
       {!envCheckResult && !isChecking && (
-        <div className="mt-6 text-center text-gray-500">
+        <div className="mt-6 text-center text-text-muted">
+          <Terminal className="w-12 h-12 mx-auto mb-3 opacity-30" />
           <p>点击上方按钮开始检测环境</p>
         </div>
       )}

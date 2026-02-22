@@ -117,7 +117,18 @@ async def save_config(
             configs.append(config_data)
 
         if save_all_configs_to_file(configs):
-            await push_log("config", f"配置已保存: {config_name} ({provider}/{model_name}, base_url: {base_url})")
+            # 只显示 API Key 后4位
+            masked_key = f"{'*' * (len(api_key) - 4)}{api_key[-4:]}" if len(api_key) > 4 else api_key
+            log_msg = f"""配置已保存:
+- 配置名称: {config_name}
+- 提供商: {provider}
+- 模型名: {model_name}
+- API 端点: {base_url}
+- API Key: {masked_key}
+- Temperature: {temperature}
+- Max Tokens: {max_tokens}
+- Overlap: {overlap}"""
+            await push_log("config", log_msg)
             return True
         return False
     except Exception as e:

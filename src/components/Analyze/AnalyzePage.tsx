@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useAppStore, FileItem } from '@/stores/appStore'
 import { analyzePdf } from '@/api'
 import TerminalPanel from '@/components/Terminal'
+import { Upload, FileText, X, FolderOpen, Play, CheckCircle, XCircle, Trash2 } from 'lucide-react'
 
 // 声明 electronAPI 类型
 declare global {
@@ -11,6 +12,7 @@ declare global {
       scanDirectory: (dirPath: string) => Promise<FileItem[]>
       isDirectory: (filePath: string) => Promise<boolean>
       selectDirectory: () => Promise<string | null>
+      openExternal: (url: string) => Promise<void>
     }
   }
 }
@@ -127,11 +129,6 @@ function AnalyzePage() {
     }
   }
 
-  // 点击选择文件
-  const handleClickSelect = () => {
-    handleFileSelect()
-  }
-
   // 添加自定义字段
   const handleAddField = () => {
     if (newField.trim() && !extractFields.includes(newField.trim())) {
@@ -167,13 +164,8 @@ function AnalyzePage() {
 
   // 选择保存目录
   const handleSelectSavePath = () => {
-    console.log('点击选择目录按钮', window.electronAPI)
-
-    // 优先使用 Electron API
     if (window.electronAPI && window.electronAPI.selectDirectory) {
-      console.log('使用 Electron API')
       window.electronAPI.selectDirectory().then((dirPath: string | null) => {
-        console.log('选择的路径:', dirPath)
         if (dirPath) {
           setSavePath(dirPath)
         }
@@ -181,15 +173,12 @@ function AnalyzePage() {
       return
     }
 
-    console.log('使用浏览器降级处理')
-    // 降级处理：使用原生 input 元素
     const input = document.createElement('input')
     input.type = 'file'
     input.webkitdirectory = true
     input.onchange = (e) => {
       const files = (e.target as HTMLInputElement).files
       if (files && files.length > 0) {
-        // 由于浏览器安全限制，无法获取完整路径，这里使用提示
         setSavePath('已选择文件夹（请在保存路径中查看）')
       }
     }
@@ -198,40 +187,41 @@ function AnalyzePage() {
 
   return (
     <div className="p-6">
-      <h2 className="text-2xl font-semibold text-gray-800 mb-6">文章解析</h2>
+      <h2 className="text-xl font-semibold text-text-primary mb-6">文章解析</h2>
 
       {/* PDF 拖拽/点击选择区域 */}
       <div
-        className={`border-2 border-dashed rounded-lg p-8 mb-6 text-center transition-colors ${
+        className={`card p-8 mb-6 text-center cursor-pointer transition-all duration-200 ${
           isDragging
-            ? 'border-blue-500 bg-blue-50'
-            : 'border-gray-300 hover:border-gray-400'
+            ? 'border-accent-primary bg-accent-light'
+            : 'border-dashed border-gray-200 hover:border-accent-primary/50'
         }`}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
-        onClick={handleClickSelect}
+        onClick={handleFileSelect}
       >
-        <div className="text-gray-500">
-          <p className="text-4xl mb-2">📄</p>
-          <p className="text-lg font-medium">
+        <div className="text-text-secondary">
+          <Upload className="w-10 h-10 mx-auto mb-3 text-accent-primary" />
+          <p className="font-medium">
             拖拽 PDF 文件到此处，或点击选择
           </p>
-          <p className="text-sm mt-1">支持 PDF 格式</p>
+          <p className="text-sm mt-1 text-text-muted">支持 PDF 格式</p>
         </div>
       </div>
 
       {/* 文件列表展示 */}
       {selectedFiles.length > 0 && (
-        <div className="mb-6">
+        <div className="card p-4 mb-6">
           <div className="flex justify-between items-center mb-3">
-            <h3 className="text-lg font-medium text-gray-700">
+            <h3 className="text-sm font-medium text-text-secondary">
               已选择文件 ({selectedFiles.length})
             </h3>
             <button
               onClick={clearFiles}
-              className="text-sm text-red-500 hover:text-red-600"
+              className="text-xs text-state-error hover:text-state-error/80 flex items-center gap-1"
             >
+              <Trash2 className="w-3 h-3" />
               清空全部
             </button>
           </div>
@@ -239,14 +229,17 @@ function AnalyzePage() {
             {selectedFiles.map((file) => (
               <li
                 key={file.id}
-                className="flex items-center justify-between bg-white border border-gray-200 rounded-lg px-4 py-2"
+                className="flex items-center justify-between px-3 py-2 bg-bg-primary rounded-lg"
               >
-                <span className="text-gray-700 truncate">{file.name}</span>
+                <div className="flex items-center gap-2 min-w-0">
+                  <FileText className="w-4 h-4 text-text-muted flex-shrink-0" />
+                  <span className="text-text-primary truncate text-sm">{file.name}</span>
+                </div>
                 <button
                   onClick={() => removeFile(file.id)}
-                  className="text-gray-400 hover:text-red-500 ml-2"
+                  className="text-text-muted hover:text-state-error ml-2 flex-shrink-0"
                 >
-                  ✕
+                  <X className="w-4 h-4" />
                 </button>
               </li>
             ))}
@@ -255,20 +248,20 @@ function AnalyzePage() {
       )}
 
       {/* 提取字段配置 */}
-      <div className="mb-6">
-        <h3 className="text-lg font-medium text-gray-700 mb-3">提取字段</h3>
+      <div className="card p-4 mb-6">
+        <h3 className="text-sm font-medium text-text-secondary mb-3">提取字段</h3>
         <div className="flex flex-wrap gap-2 mb-3">
           {extractFields.map((field) => (
             <span
               key={field}
-              className="inline-flex items-center gap-1 bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm"
+              className="tag"
             >
               {field}
               <button
                 onClick={() => handleRemoveField(field)}
-                className="hover:text-blue-900"
+                className="hover:text-accent-hover ml-1"
               >
-                ×
+                <X className="w-3 h-3" />
               </button>
             </span>
           ))}
@@ -278,13 +271,13 @@ function AnalyzePage() {
             type="text"
             value={newField}
             onChange={(e) => setNewField(e.target.value)}
-            onKeyPress={(e) => e.key === 'Enter' && handleAddField()}
+            onKeyDown={(e) => e.key === 'Enter' && handleAddField()}
             placeholder="添加自定义字段"
-            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="input"
           />
           <button
             onClick={handleAddField}
-            className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
+            className="btn-secondary"
           >
             添加
           </button>
@@ -292,51 +285,52 @@ function AnalyzePage() {
       </div>
 
       {/* 保存路径设置 */}
-      <div className="mb-6">
-        <h3 className="text-lg font-medium text-gray-700 mb-3">保存路径</h3>
+      <div className="card p-4 mb-6">
+        <h3 className="text-sm font-medium text-text-secondary mb-3">保存路径</h3>
         <div className="flex gap-2">
           <input
             type="text"
             value={savePath}
             readOnly
             placeholder="请选择保存目录"
-            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg bg-gray-50"
+            className="input bg-bg-primary"
           />
           <button
             type="button"
             onClick={handleSelectSavePath}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 cursor-pointer"
+            className="btn-secondary flex items-center gap-2 whitespace-nowrap"
           >
+            <FolderOpen className="w-4 h-4" />
             选择目录
           </button>
         </div>
       </div>
 
       {/* 保存格式设置 */}
-      <div className="mb-6">
-        <h3 className="text-lg font-medium text-gray-700 mb-3">保存格式</h3>
-        <div className="flex gap-4">
-          <label className="inline-flex items-center">
+      <div className="card p-4 mb-6">
+        <h3 className="text-sm font-medium text-text-secondary mb-3">保存格式</h3>
+        <div className="flex gap-6">
+          <label className="inline-flex items-center gap-2 cursor-pointer">
             <input
               type="radio"
               name="saveFormat"
               value="json"
               checked={saveFormat === 'json'}
               onChange={(e) => setSaveFormat(e.target.value)}
-              className="form-radio h-4 w-4 text-blue-600"
+              className="w-4 h-4 text-accent-primary"
             />
-            <span className="ml-2 text-gray-700">JSON</span>
+            <span className="text-text-primary text-sm">JSON</span>
           </label>
-          <label className="inline-flex items-center">
+          <label className="inline-flex items-center gap-2 cursor-pointer">
             <input
               type="radio"
               name="saveFormat"
               value="excel"
               checked={saveFormat === 'excel'}
               onChange={(e) => setSaveFormat(e.target.value)}
-              className="form-radio h-4 w-4 text-blue-600"
+              className="w-4 h-4 text-accent-primary"
             />
-            <span className="ml-2 text-gray-700">Excel</span>
+            <span className="text-text-primary text-sm">Excel</span>
           </label>
         </div>
       </div>
@@ -345,32 +339,48 @@ function AnalyzePage() {
       <button
         onClick={handleAnalyze}
         disabled={selectedFiles.length === 0 || isAnalyzing || !savePath}
-        className={`w-full py-3 rounded-lg font-medium transition-colors ${
+        className={`w-full py-3 rounded-lg font-medium transition-all duration-200 flex items-center justify-center gap-2 ${
           selectedFiles.length === 0 || isAnalyzing || !savePath
-            ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-            : 'bg-blue-600 text-white hover:bg-blue-700'
+            ? 'bg-gray-200 text-text-muted cursor-not-allowed'
+            : 'btn-primary'
         }`}
       >
-        {isAnalyzing ? '解析中...' : '开始解析'}
+        {isAnalyzing ? (
+          <>
+            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+            解析中...
+          </>
+        ) : (
+          <>
+            <Play className="w-4 h-4" />
+            开始解析
+          </>
+        )}
       </button>
 
       {/* 解析结果提示 - 成功 */}
       {analyzeResult && analyzeResult.success && (
-        <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
-          <p className="text-green-700 font-medium">解析完成</p>
-          {analyzeResult.message && analyzeResult.message.includes('已保存至') && (
-            <p className="text-green-600 text-sm mt-1">{analyzeResult.message}</p>
-          )}
+        <div className="mt-4 p-4 bg-state-success/10 border border-state-success/20 rounded-lg flex items-center gap-2">
+          <CheckCircle className="w-5 h-5 text-state-success" />
+          <div>
+            <p className="text-state-success font-medium">解析完成</p>
+            {analyzeResult.message && analyzeResult.message.includes('已保存至') && (
+              <p className="text-state-success/80 text-sm mt-0.5">{analyzeResult.message}</p>
+            )}
+          </div>
         </div>
       )}
 
       {/* 解析结果提示 - 失败 */}
       {analyzeResult && !analyzeResult.success && (
-        <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-          <p className="text-red-700 font-medium">解析失败</p>
-          {analyzeResult.message && (
-            <p className="text-red-600 text-sm mt-1">{analyzeResult.message}</p>
-          )}
+        <div className="mt-4 p-4 bg-state-error/10 border border-state-error/20 rounded-lg flex items-center gap-2">
+          <XCircle className="w-5 h-5 text-state-error" />
+          <div>
+            <p className="text-state-error font-medium">解析失败</p>
+            {analyzeResult.message && (
+              <p className="text-state-error/80 text-sm mt-0.5">{analyzeResult.message}</p>
+            )}
+          </div>
         </div>
       )}
 

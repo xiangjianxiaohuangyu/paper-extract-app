@@ -3,7 +3,7 @@ import Sidebar from './Sidebar'
 
 function Layout() {
   return (
-    <div className="flex h-screen bg-gray-50">
+    <div className="flex h-screen bg-bg-primary">
       {/* 左侧固定导航栏 */}
       <Sidebar />
 

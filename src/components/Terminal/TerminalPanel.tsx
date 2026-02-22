@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import { Terminal as TerminalIcon, Trash2 } from 'lucide-react'
 
 interface TerminalPanelProps {
   logs: string[]
@@ -16,14 +17,18 @@ function TerminalPanel({ logs, onClear }: TerminalPanelProps) {
   }, [logs])
 
   return (
-    <div className="bg-[#1e1e1e] rounded-xl overflow-hidden">
+    <div className="bg-terminal-bg rounded-xl overflow-hidden border border-terminal-border">
       {/* 标题栏 */}
-      <div className="flex items-center justify-between px-4 py-2 bg-[#2d2d2d] border-b border-[#3d3d3d]">
-        <span className="text-sm text-gray-400">终端输出</span>
+      <div className="flex items-center justify-between px-4 py-2.5 bg-terminal-header border-b border-terminal-border">
+        <div className="flex items-center gap-2">
+          <TerminalIcon className="w-4 h-4 text-terminal-muted" />
+          <span className="text-sm text-terminal-muted">终端输出</span>
+        </div>
         <button
           onClick={onClear}
-          className="text-xs text-gray-500 hover:text-gray-300 px-2 py-1 rounded hover:bg-[#3d3d3d] transition-colors"
+          className="text-xs text-terminal-muted hover:text-terminal-text px-2 py-1 rounded hover:bg-terminal-border transition-colors flex items-center gap-1"
         >
+          <Trash2 className="w-3 h-3" />
           清空
         </button>
       </div>
@@ -31,14 +36,15 @@ function TerminalPanel({ logs, onClear }: TerminalPanelProps) {
       {/* 日志内容 */}
       <div
         ref={terminalRef}
-        className="h-48 overflow-y-auto p-4 font-mono text-sm"
-        style={{ color: '#e5e5e5' }}
+        className="h-88 overflow-y-auto p-4 font-mono text-sm"
+        style={{ color: '#E2E8F0' }}
       >
         {logs.length === 0 ? (
-          <span className="text-gray-500">等待日志...</span>
+          <span className="text-terminal-muted">等待日志...</span>
         ) : (
           logs.map((log, index) => (
-            <div key={index} className="leading-relaxed">
+            <div key={index} className="leading-relaxed whitespace-pre-wrap">
+              <span className="text-terminal-muted">› </span>
               {log}
             </div>
           ))

@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Menu, ipcMain, dialog } = require('electron')
+const { app, BrowserWindow, Menu, ipcMain, dialog, shell } = require('electron')
 const path = require('path')
 const { spawn } = require('child_process')
 
@@ -10,6 +10,11 @@ let serverProcess = null
 // 注册 IPC 处理器
 ipcMain.handle('dialog:openFile', async (event, options) => {
   return await dialog.showOpenDialog(options)
+})
+
+// 在浏览器中打开外部链接
+ipcMain.handle('shell:openExternal', async (event, url) => {
+  return await shell.openExternal(url)
 })
 
 ipcMain.handle('dialog:openDirectory', async (event) => {
@@ -93,6 +98,7 @@ function createWindow() {
   const win = new BrowserWindow({
     width: 1200,
     height: 800,
+    icon: path.join(__dirname, '../academic_ai_icon.png'),
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,

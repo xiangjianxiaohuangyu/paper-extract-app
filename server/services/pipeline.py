@@ -176,7 +176,7 @@ async def run_pipeline(file_paths: List[str], fields: List[str]) -> Dict:
 
         # Step 1: 解析 PDF
         content, parse_error = pdf_parser.parse_pdf(file_path)
-        await push_log("analyze", f"PDF 解析完成，内容长度: {len(content) if content else 0} 字符")
+        #await push_log("analyze", f"PDF 解析完成，内容长度: {len(content) if content else 0} 字符")
 
         # 检查 PDF 解析是否成功
         if parse_error:
@@ -189,6 +189,7 @@ async def run_pipeline(file_paths: List[str], fields: List[str]) -> Dict:
 
         # Step 3: 字段提取
         result = llm_service.extract_fields_advanced(content, fields, model_name, api_key, base_url, max_tokens, overlap, temperature)
+        await push_log("analyze", f"文件{os.path.basename(file_path)}解析完成")
 
         # 检查是否有错误
         if result.get("error"):

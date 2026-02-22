@@ -6,7 +6,8 @@
       "Bash(python:*)",
       "Bash(timeout 10 npm run dev:*)",
       "Bash(npm install:*)",
-      "Bash(timeout 8 npm run:*)"
+      "Bash(timeout 8 npm run:*)",
+      "Bash(npm run build)"
     ]
   }
 }
