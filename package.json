@@ -1,6 +1,6 @@
 {
   "name": "paper-extract-app",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "type": "module",
   "description": "论文提取桌面应用",
   "main": "electron/main.cjs",
