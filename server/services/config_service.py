@@ -85,20 +85,15 @@ async def save_config(
     try:
         configs = get_all_configs_from_file()
 
-        # 清理配置名称，移除非法字符
-        safe_name = "".join(c for c in config_name if c.isalnum() or c in ('-', '_', '.'))
-        if not safe_name:
-            safe_name = ""
-
         # 检查是否已存在相同名称的配置
         existing_index = -1
         for i, cfg in enumerate(configs):
-            if cfg.get('config_name') == safe_name:
+            if cfg.get('config_name') == config_name:
                 existing_index = i
                 break
 
         config_data = {
-            "config_name": safe_name,
+            "config_name": config_name,
             "provider": provider,
             "model_name": model_name,
             "api_key": api_key,
@@ -151,17 +146,12 @@ async def load_config(config_name: str = "") -> Dict:
     try:
         configs = get_all_configs_from_file()
 
-        # 清理配置名称
-        safe_name = "".join(c for c in config_name if c.isalnum() or c in ('-', '_', '.'))
-        if not safe_name:
-            safe_name = ""
-
         for i, cfg in enumerate(configs):
-            if cfg.get('config_name') == safe_name:
+            if cfg.get('config_name') == config_name:
                 # 更新 updated_at 时间戳
                 configs[i]['updated_at'] = datetime.now().isoformat()
                 save_all_configs_to_file(configs)
-                await push_log("config", f"加载配置: {config_name}...")
+                await push_log("config", f"加载配置: {config_name}")
                 return configs[i]
 
         # 未找到配置，返回默认配置
@@ -224,11 +214,8 @@ async def delete_config(config_name: str) -> bool:
     try:
         configs = get_all_configs_from_file()
 
-        # 清理配置名称
-        safe_name = "".join(c for c in config_name if c.isalnum() or c in ('-', '_', '.'))
-
         # 过滤掉要删除的配置
-        new_configs = [cfg for cfg in configs if cfg.get('config_name') != safe_name]
+        new_configs = [cfg for cfg in configs if cfg.get('config_name') != config_name]
 
         if len(new_configs) < len(configs):
             if save_all_configs_to_file(new_configs):

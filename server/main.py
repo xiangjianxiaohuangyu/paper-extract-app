@@ -325,9 +325,11 @@ async def test_connection(request: ConfigRequest):
 
         )
     except Exception as e:
+        error_msg = f"连接失败: {str(e)}"
+        await push_log("config", error_msg)
         return TestConnectionResponse(
             success=False,
-            message=f"连接失败: {str(e)}"
+            message=error_msg
         )
 
 

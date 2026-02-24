@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useAppStore } from '@/stores/appStore'
 import { saveConfig, loadConfig, getConfigList, deleteConfig, getLatestConfig, testConnection } from '@/api'
 import TerminalPanel from '@/components/Terminal'
-import { Settings, Upload, Trash2, Check, X, Plug, Save, AlertCircle, CheckCircle } from 'lucide-react'
+import { Settings, Upload, Trash2, X, Plug, Save } from 'lucide-react'
 
 // 模型选项 - 按供应商分组
 const PROVIDERS = [
@@ -30,23 +30,28 @@ interface SavedConfig {
   config_name: string
   model_name: string
   file_name: string
+  provider?: string
+  base_url?: string
+  temperature?: number
+  max_tokens?: number
+  overlap?: number
+  updated_at?: string
 }
 
 function ConfigPage() {
-  const {config, setConfig, terminalLogs, clearLogs } = useAppStore()
+  const {config, setConfig, terminalLogs, clearLogs, showToast } = useAppStore()
   const [provider, setProvider] = useState<'qwen' | 'openai' | 'other' | ''>(config.provider as 'qwen' | 'openai' | 'other' | '' || 'other')
   const [modelName, setModelName] = useState(config.model_name || '')
   const [apiKey, setApiKey] = useState(config.api_key || '')
   const [configName, setConfigName] = useState(config.config_name || '')
   const [baseUrl, setBaseUrl] = useState(config.base_url || '')
   const [isSaving, setIsSaving] = useState(false)
-  const [saveMessage, setSaveMessage] = useState('')
+  // 使用全局 toast 替代本地 saveMessage
   const [showImportModal, setShowImportModal] = useState(false)
   const [showConfirmModal, setShowConfirmModal] = useState(false)
   const [savedConfigs, setSavedConfigs] = useState<SavedConfig[]>([])
   const [isInitialized, setIsInitialized] = useState(false)
   const [isTesting, setIsTesting] = useState(false)
-  const [testMessage, setTestMessage] = useState('')
 
   // 高级设置状态
   const [temperature, setTemperature] = useState(0.1)
@@ -133,22 +138,37 @@ function ConfigPage() {
     }
   }
 
+  // 处理配置名称输入，禁止输入空格和特殊字符
+  const handleConfigNameChange = (value: string) => {
+    // 过滤非法字符，保留字母、数字和 - _ .
+    const safeValue = value
+    setConfigName(safeValue)
+  }
+
   // 保存配置
-  const handleSave = async () => {
-    if (!configName.trim()) {
-      setSaveMessage('请输入配置名称')
-      return
+  // 验证必填字段
+  const validateRequiredFields = (includeConfigName: boolean = true): boolean => {
+    if (includeConfigName && !configName.trim()) {
+      showToast('请输入配置名称', 'error')
+      return false
     }
     if (!modelName.trim()) {
-      setSaveMessage('请输入模型名称')
-      return
+      showToast('请输入模型名称', 'error')
+      return false
     }
     if (!baseUrl.trim()) {
-      setSaveMessage('请输入 Base Url')
-      return
+      showToast('请输入 Base Url', 'error')
+      return false
     }
     if (!apiKey.trim()) {
-      setSaveMessage('请输入 API Key')
+      showToast('请输入 API Key', 'error')
+      return false
+    }
+    return true
+  }
+
+  const handleSave = async () => {
+    if (!validateRequiredFields(true)) {
       return
     }
 
@@ -163,25 +183,25 @@ function ConfigPage() {
   }
 
   // 执行实际保存操作
-  const doSave = async (saveConfigName: string) => {
+  const doSave = async (saveConfigName: string, showToastOnSuccess: boolean = true) => {
     setShowConfirmModal(false)
     setIsSaving(true)
-    setSaveMessage('')
 
     try {
       const result = await saveConfig(modelName, apiKey, saveConfigName, provider, baseUrl, temperature, maxTokens, overlap) as { success: boolean }
       if (result.success) {
-        setSaveMessage('保存成功')
+        if (showToastOnSuccess) {
+          showToast('保存成功', 'success')
+        }
         setConfig({ model_name: modelName, api_key: apiKey, config_name: saveConfigName, provider: provider, base_url: baseUrl, temperature: temperature, max_tokens: maxTokens, overlap: overlap })
         fetchSavedConfigs()
       } else {
-        setSaveMessage('保存失败')
+        showToast('保存失败', 'error')
       }
     } catch (error) {
-      setSaveMessage('保存失败')
+      showToast('保存失败', 'error')
     } finally {
       setIsSaving(false)
-      setTimeout(() => setSaveMessage(''), 3000)
     }
   }
 
@@ -210,8 +230,7 @@ function ConfigPage() {
         if (data.max_tokens !== undefined) setMaxTokens(data.max_tokens)
         if (data.overlap !== undefined) setOverlap(data.overlap)
         setConfig(data)
-        setSaveMessage(`已加载配置: ${savedConfig.config_name}`)
-        setTimeout(() => setSaveMessage(''), 3000)
+        showToast(`已加载配置: ${savedConfig.config_name}`, 'success')
       }
     } catch (error) {
       console.error('加载配置失败:', error)
@@ -225,9 +244,8 @@ function ConfigPage() {
     try {
       const result = await deleteConfig(savedConfig.file_name) as { success: boolean }
       if (result.success) {
-        setSaveMessage(`配置 "${savedConfig.config_name}" 已删除`)
+        showToast(`配置 "${savedConfig.config_name}" 已删除`, 'success')
         fetchSavedConfigs()
-        setTimeout(() => setSaveMessage(''), 3000)
       }
     } catch (error) {
       console.error('删除配置失败:', error)
@@ -236,30 +254,25 @@ function ConfigPage() {
 
   // 测试连通性
   const handleTestConnection = async () => {
-    if (!apiKey.trim()) {
-      setTestMessage('请先输入 API Key')
-      return
-    }
-    if (!baseUrl.trim()) {
-      setTestMessage('请先填写 API 端点')
+    if (!validateRequiredFields(true)) {
       return
     }
 
     setIsTesting(true)
-    setTestMessage('')
 
     try {
       const result = await testConnection(modelName, apiKey, provider, baseUrl) as { success: boolean; message: string }
       if (result.success) {
-        setTestMessage('✓ 连接成功')
+        // 测试成功后自动保存配置（不显示保存成功的toast）
+        await doSave(configName.trim(), false)
+        showToast('连接成功，已自动保存配置', 'success')
       } else {
-        setTestMessage(`✗ ${result.message}`)
+        showToast('测试失败，详情查看日志输出', 'error')
       }
     } catch (error) {
-      setTestMessage('✗ 测试失败: 网络错误')
+      showToast('测试失败，详情查看日志输出', 'error')
     } finally {
       setIsTesting(false)
-      setTimeout(() => setTestMessage(''), 10000)
     }
   }
 
@@ -276,8 +289,15 @@ function ConfigPage() {
           <input
             type="text"
             value={configName}
-            onChange={(e) => setConfigName(e.target.value)}
-            placeholder="输入配置名称"
+            onKeyDown={(e) => {
+              // 禁止输入空格
+              if (e.key === ' ') {
+                e.preventDefault()
+                showToast('配置名称不能包含空格', 'error')
+              }
+            }}
+            onChange={(e) => handleConfigNameChange(e.target.value)}
+            placeholder="输入配置名称（仅支持字母、数字、-、_、.）"
             className="input"
           />
           <p className="mt-1 text-sm text-text-muted">
@@ -471,26 +491,6 @@ function ConfigPage() {
             <Plug className="w-4 h-4" />
             {isTesting ? '测试中...' : '测试连通性'}
           </button>
-          {saveMessage && (
-            <span
-              className={`text-sm flex items-center gap-1 ${
-                saveMessage.includes('成功') ? 'text-state-success' : 'text-state-error'
-              }`}
-            >
-              {saveMessage.includes('成功') ? <CheckCircle className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
-              {saveMessage}
-            </span>
-          )}
-          {testMessage && (
-            <span
-              className={`text-sm whitespace-pre-wrap flex items-center gap-1 ${
-                testMessage.includes('✓') ? 'text-state-success' : 'text-state-error'
-              }`}
-            >
-              {testMessage.includes('✓') ? <Check className="w-4 h-4" /> : <X className="w-4 h-4" />}
-              {testMessage}
-            </span>
-          )}
         </div>
       </div>
 
@@ -522,7 +522,7 @@ function ConfigPage() {
             <div className="p-4 border-b border-gray-100 flex justify-between items-center">
               <h3 className="text-lg font-medium text-text-primary flex items-center gap-2">
                 <Settings className="w-5 h-5" />
-                选择配置
+                导入配置
               </h3>
               <button
                 onClick={() => setShowImportModal(false)}
@@ -546,7 +546,10 @@ function ConfigPage() {
                         className="flex-1 cursor-pointer"
                       >
                         <div className="font-medium text-text-primary">{cfg.config_name}</div>
-                        <div className="text-sm text-text-muted">{cfg.model_name}</div>
+                        <div className="text-xs text-text-muted space-y-0.5">
+                          <div>模型: {cfg.model_name}</div>
+                          <div>Temperature: {cfg.temperature} | Max Tokens: {cfg.max_tokens} | Overlap: {cfg.overlap}</div>
+                        </div>
                       </div>
                       <button
                         onClick={(e) => handleDeleteConfig(e, cfg)}

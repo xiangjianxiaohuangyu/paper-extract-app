@@ -43,8 +43,19 @@ export interface EnvCheckResult {
 // 模块类型
 export type ModuleType = 'analyze' | 'config' | 'env'
 
+// Toast 类型定义
+export interface ToastData {
+  message: string
+  type: 'success' | 'error'
+}
+
 // 应用状态
 interface AppState {
+  // Toast 消息相关
+  toast: ToastData | null
+  showToast: (message: string, type: 'success' | 'error') => void
+  hideToast: () => void
+
   // 文章解析相关
   selectedFiles: FileItem[]
   extractFields: string[]
@@ -84,6 +95,13 @@ interface AppState {
 export const useAppStore = create<AppState>()(
   persist(
     (set) => ({
+  // Toast 消息状态
+  toast: null,
+
+  showToast: (message, type) => set({ toast: { message, type } }),
+
+  hideToast: () => set({ toast: null }),
+
   // 文章解析相关状态
   selectedFiles: [],
   extractFields: ['题目', '创新点', '主要内容', '解决的问题'],

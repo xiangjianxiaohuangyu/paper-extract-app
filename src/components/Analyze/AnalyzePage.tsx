@@ -340,6 +340,7 @@ function AnalyzePage() {
       <div className="card p-4 mb-6">
         <h3 className="text-sm font-medium text-text-secondary mb-3">当前配置</h3>
         <div className="text-xs text-text-muted space-y-0.5">
+          <p>配置名称: {config.config_name || '未设置'}</p>
           <p>模型: {config.model_name || '未设置'}</p>
           <p>提供商: {config.provider || '未设置'}</p>
           <p>API 端点: {config.base_url || '未设置'}</p>

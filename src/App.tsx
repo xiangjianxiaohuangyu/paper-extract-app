@@ -4,10 +4,13 @@ import AnalyzePage from './components/Analyze/AnalyzePage'
 import ConfigPage from './components/Config/ConfigPage'
 import EnvCheckPage from './components/EnvCheck/EnvCheckPage'
 import AboutPage from './components/About'
+import Toast from './components/Toast/Toast'
 
 function App() {
   return (
-    <Routes>
+    <>
+      <Toast />
+      <Routes>
       <Route path="/" element={<Layout />}>
         <Route index element={<Navigate to="/analyze" replace />} />
         <Route path="analyze" element={<AnalyzePage />} />
@@ -16,6 +19,7 @@ function App() {
         <Route path="about" element={<AboutPage />} />
       </Route>
     </Routes>
+    </>
   )
 }
 
