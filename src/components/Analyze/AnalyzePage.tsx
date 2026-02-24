@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import { useAppStore, FileItem } from '@/stores/appStore'
-import { analyzePdf } from '@/api'
+import { analyzePdf, testConnection } from '@/api'
 import TerminalPanel from '@/components/Terminal'
-import { Upload, FileText, X, FolderOpen, Play, CheckCircle, XCircle, Trash2 } from 'lucide-react'
+import AnalyzeProgressPanel from './AnalyzeProgressPanel'
+import { Upload, FileText, X, FolderOpen, Play, CheckCircle, Trash2 } from 'lucide-react'
 
 // 声明 electronAPI 类型
 declare global {
@@ -39,6 +40,7 @@ function AnalyzePage() {
     terminalLogs,
     clearLogs,
     config,
+    showToast,
   } = useAppStore()
 
   // 处理文件选择（使用 Electron API 支持文件夹）
@@ -153,11 +155,25 @@ function AnalyzePage() {
     setAnalyzeResult(null)
 
     try {
+      // 先测试连通性
+      const testResult = await testConnection(config.model_name || '', config.api_key || '', config.provider || 'other', config.base_url || '') as { success: boolean; message?: string }
+      if (!testResult.success) {
+        showToast('API 连接失败，请在-基础配置-中测试连通性', 'error')
+        setAnalyzing(false)
+        return
+      }
+
       const filePaths = selectedFiles.map((f) => f.path)
-      const result = await analyzePdf(filePaths, extractFields, savePath || undefined, saveFormat)
+      const result = await analyzePdf(filePaths, extractFields, savePath || undefined, saveFormat) as { success: boolean; message?: string }
       setAnalyzeResult(result)
+      if (result.success) {
+        showToast(result.message || '解析成功', 'success')
+      } else {
+        showToast(result.message || '解析失败，详情查看日志输出', 'error')
+      }
     } catch (error) {
       console.error('[AnalyzePage] 解析失败:', error)
+      showToast('解析失败，详情查看日志输出', 'error')
     } finally {
       setAnalyzing(false)
     }
@@ -373,6 +389,9 @@ function AnalyzePage() {
         )}
       </button>
 
+      {/* 解析进度面板 */}
+      <AnalyzeProgressPanel />
+
       {/* 解析结果提示 - 成功 */}
       {analyzeResult && analyzeResult.success && (
         <div className="mt-4 p-4 bg-state-success/10 border border-state-success/20 rounded-lg flex items-center gap-2">
@@ -381,19 +400,6 @@ function AnalyzePage() {
             <p className="text-state-success font-medium">解析完成</p>
             {analyzeResult.message && analyzeResult.message.includes('已保存至') && (
               <p className="text-state-success/80 text-sm mt-0.5">{analyzeResult.message}</p>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* 解析结果提示 - 失败 */}
-      {analyzeResult && !analyzeResult.success && (
-        <div className="mt-4 p-4 bg-state-error/10 border border-state-error/20 rounded-lg flex items-center gap-2">
-          <XCircle className="w-5 h-5 text-state-error" />
-          <div>
-            <p className="text-state-error font-medium">解析失败</p>
-            {analyzeResult.message && (
-              <p className="text-state-error/80 text-sm mt-0.5">{analyzeResult.message}</p>
             )}
           </div>
         </div>

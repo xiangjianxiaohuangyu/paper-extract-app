@@ -61,10 +61,10 @@ function AboutPage() {
             <span className="text-text-secondary">【新增】文本清洗，去除页眉页脚、空行乱码等内容</span>
           </li>
           <li className="flex items-start gap-2">
-            <span className="text-text-secondary">【修复】关闭应用不会自动终止server.exe进程的BUG</span>
+            <span className="text-text-secondary">【新增】中断解析功能，并保存已解析的结果</span>
           </li>
           <li className="flex items-start gap-2">
-            <span className="text-text-secondary">【优化】应用整体样式</span>
+            <span className="text-text-secondary">【优化】并行解析论文，提高解析速度</span>
           </li>
         </ul>
       </div>

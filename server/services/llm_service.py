@@ -4,9 +4,11 @@ LLM 服务
 """
 #print(">>> import llm_service...")
 import json
+import os
 from typing import List, Dict, Optional
 import tiktoken
 from langchain_openai import ChatOpenAI
+from .log_service import push_progress
 
 
 def split_by_tokens(text: str, max_tokens: int = 3000, overlap: int = 300) -> List[str]:
@@ -146,7 +148,7 @@ def merge_results(results: List[Dict], fields: List[str], model_name: str, api_k
         return fallback
 
 
-def extract_fields_advanced(content: str, fields: List[str], model_name: str, api_key: str, base_url: str, max_tokens: int = 10000, overlap: int = 500, temperature: float = 0.1) -> Dict:
+async def extract_fields_advanced(content: str, fields: List[str], model_name: str, api_key: str, base_url: str, max_tokens: int = 10000, overlap: int = 500, temperature: float = 0.1, file_name: str = "", file_index: int = 0, total_files: int = 1) -> Dict:
     """
     高级字段提取：Token-aware 分块 + Map-Reduce
 
@@ -163,16 +165,34 @@ def extract_fields_advanced(content: str, fields: List[str], model_name: str, ap
     Returns:
         提取结果字典（包含 parsed 和 raw 字段）
     """
-    print(f"[extract_fields_advanced] 开始处理，内容长度: {len(content)} 字符", flush=True)
+    # 进度计算：每个文件内部 0-100%，前端根据 totalFiles 和 currentFileIndex 计算总进度
+    # 阶段划分：chunking 0-10%, extracting 10-90%, merging 90-100%
 
-    # 1. Token-aware 分块
+    # 1. Token-aware 分块 (0-10%)
+    await push_progress({
+        "currentFile": file_name,
+        "currentStep": "chunking",
+        "currentFileIndex": file_index,
+        "totalFiles": total_files,
+        "progress": 10.0
+    })
     chunks = split_by_tokens(content, max_tokens=max_tokens, overlap=overlap)
-    print(f"[extract_fields_advanced] 分块数量: {len(chunks)}")
 
-    # 2. Map 阶段：每块提取字段
+    # 2. Map 阶段：每块提取字段 (10%-90%)
     partial_results = []
+    chunk_count = len(chunks)
     for i, chunk in enumerate(chunks):
-        print(f"[extract_fields_advanced] 处理块 {i+1}/{len(chunks)}")
+
+        # 推送分块进度：10% + 80% * (i+1) / chunk_count
+        extracting_progress = 10.0 + 80.0 * (i) / chunk_count
+        await push_progress({
+            "currentFile": file_name,
+            "currentStep": "extracting",
+            "currentFileIndex": file_index,
+            "totalFiles": total_files,
+            "progress": extracting_progress
+        })
+
         result = extract_from_chunk(chunk, fields, model_name, api_key, base_url, temperature)
 
         # 检查是否有错误
@@ -186,15 +206,23 @@ def extract_fields_advanced(content: str, fields: List[str], model_name: str, ap
         partial_results.append(result)
 
     # 3. Reduce 阶段：合并结果
-    print(f"[extract_fields_advanced] 开始合并 {len(partial_results)} 个结果")
+    await push_progress({
+        "currentFile": file_name,
+        "currentStep": "merging",
+        "currentFileIndex": file_index,
+        "totalFiles": total_files,
+        "progress": 95
+    })   
+    
     try:
         final_result = merge_results(partial_results, fields, model_name, api_key, base_url)
+
         return {
             "parsed": final_result,
             "raw": json.dumps(partial_results, ensure_ascii=False)
         }
     except Exception as e:
-        print(f"[extract_fields_advanced] 合并失败: {e}")
+        
         return {
             "parsed": {field: "" for field in fields},
             "raw": json.dumps(partial_results, ensure_ascii=False),
@@ -301,10 +329,8 @@ def extract_fields(content: str, fields: List[str], model_name: str = "qwen-max"
 
     except Exception as e:
         import traceback
-        print(f"字段提取失败: {e}")
-        print(f"原始响应: {raw_response[:500] if raw_response else '未获取到响应'}")
-        print(f"详细堆栈: {traceback.format_exc()}")
         return {
             "parsed": {field: "" for field in fields},
-            "raw": raw_response  # 现在 raw_response 一定存在
+            "raw": raw_response,
+            "error": f"字段提取失败: {str(e)}"
         }

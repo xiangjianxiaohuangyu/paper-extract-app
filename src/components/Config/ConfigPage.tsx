@@ -498,12 +498,14 @@ function ConfigPage() {
       <div className="card p-4 mt-6">
         <h3 className="text-sm font-medium text-text-secondary mb-2">配置说明</h3>
         <ul className="text-sm text-text-muted space-y-1">
+          <li className="text-state-warning">• 修改配置后请点击"保存配置"按钮，否则不会生效</li>
           <li>• 配置名称：用于标识不同配置方案</li>
           <li>• 模型供应商：选择通义千问 (Qwen) 或 OpenAI</li>
           <li>• 模型名称：选择具体使用的模型版本</li>
           <li>• API Key：用于调用模型的密钥，请妥善保管</li>
           <li>• 配置会保存到本地，下次启动时自动加载</li>
           <li>• 导入配置：从已保存的配置列表中选择</li>
+
         </ul>
       </div>
 

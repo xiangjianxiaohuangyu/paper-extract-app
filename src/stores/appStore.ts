@@ -43,6 +43,15 @@ export interface EnvCheckResult {
 // 模块类型
 export type ModuleType = 'analyze' | 'config' | 'env'
 
+// 解析进度类型定义
+export interface AnalyzeProgress {
+  currentFile: string
+  currentStep: 'starting' | 'parsing' | 'estimating' | 'chunking' | 'extracting' | 'merging' | 'saving' | 'complete' | 'finished' | 'error'
+  currentFileIndex: number
+  totalFiles: number
+  progress: number
+}
+
 // Toast 类型定义
 export interface ToastData {
   message: string
@@ -90,6 +99,10 @@ interface AppState {
   }
   appendLog: (module: ModuleType, message: string) => void
   clearLogs: (module: ModuleType) => void
+
+  // 解析进度相关
+  analyzeProgress: AnalyzeProgress | null
+  setAnalyzeProgress: (progress: AnalyzeProgress | null) => void
 }
 
 export const useAppStore = create<AppState>()(
@@ -181,6 +194,11 @@ export const useAppStore = create<AppState>()(
         [module]: [],
       },
     })),
+
+  // 解析进度相关状态
+  analyzeProgress: null,
+
+  setAnalyzeProgress: (progress) => set({ analyzeProgress: progress }),
 }), {
       name: 'paper-extract-storage',
       partialize: (state) => ({

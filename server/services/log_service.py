@@ -67,3 +67,19 @@ async def push_log(module: str, message: str) -> None:
         })
     except Exception as e:
         print(f"[log_service] push_log 异常: {e}")
+
+
+async def push_progress(data: dict) -> None:
+    """
+    推送解析进度消息
+
+    Args:
+        data: 进度数据，包含 currentFile, currentStep, currentFileIndex, totalFiles, progress
+    """
+    try:
+        await manager.broadcast({
+            "type": "progress",
+            "data": data
+        })
+    except Exception as e:
+        print(f"[log_service] push_progress 异常: {e}")

@@ -25,7 +25,7 @@ from datetime import datetime
 import pandas as pd
 
 from services import pipeline, config_service, env_service
-from services.log_service import manager, push_log
+from services.log_service import manager, push_log, push_progress
 
 #print(f"import module finish, use time: {time.time() - start:.2f}s")
 

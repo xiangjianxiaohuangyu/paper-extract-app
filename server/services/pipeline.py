@@ -7,7 +7,7 @@ import os
 from typing import List, Dict
 import tiktoken
 from . import pdf_parser, llm_service, config_service
-from .log_service import push_log
+from .log_service import push_log, push_progress
 
 # Token 预估函数
 def estimate_tokens(text: str) -> int:
@@ -59,6 +59,53 @@ def estimate_cost(input_tokens: int, output_tokens: int = 1000, model_name: str 
     total_cost = input_cost + output_cost
 
     return f"约 {total_cost:.4f} 元"
+
+
+async def validate_and_load_config() -> Dict:
+    """
+    获取并验证配置
+
+    Returns:
+        配置字典，如果验证失败返回 None
+    """
+    # 获取最近保存的配置
+    config = await config_service.get_latest_config()
+
+    config_name = config.get("config_name", "未设置")
+    provider = config.get("provider", "qwen")
+    api_key = config.get("api_key", "")
+    model_name = config.get("model_name", "qwen-max")
+    base_url = config.get("base_url", "")
+    temperature = config.get("temperature", 0.1)
+    max_tokens = config.get("max_tokens", 10000)
+    overlap = config.get("overlap", 500)
+
+    # 输出配置信息
+    await push_log("analyze", f"配置信息: config_name={config_name}, provider={provider}, model_name={model_name}, api_key={'***' + api_key[-4:] if api_key else ''}, base_url={base_url}, temperature={temperature}, max_tokens={max_tokens}, overlap={overlap}")
+
+    # 检查配置完整性
+    if not config_name or config_name == "未设置":
+        await push_log("analyze", "警告: 配置名称为空，请在配置页面保存配置")
+        return None
+
+    if not api_key:
+        await push_log("analyze", "警告: API Key 为空，请在配置页面设置 API Key")
+        return None
+
+    if not base_url:
+        await push_log("analyze", "警告: base_url 为空，请在配置页面设置 API 端点")
+        return None
+
+    return {
+        "config_name": config_name,
+        "provider": provider,
+        "api_key": api_key,
+        "model_name": model_name,
+        "base_url": base_url,
+        "temperature": temperature,
+        "max_tokens": max_tokens,
+        "overlap": overlap,
+    }
 
 
 async def estimate_and_log_tokens(content: str, fields: List[str], model_name: str = "qwen-max") -> tuple:
@@ -140,56 +187,60 @@ async def run_pipeline(file_paths: List[str], fields: List[str]) -> Dict:
         3. 对每个 chunk 调用 extract_fields() 提取字段
         4. 调用 merge_results() 汇总所有结果
     """
+
+    # 获取并验证配置
+    config = await validate_and_load_config()
+    if not config:
+        return {"total_files": 0, "fields": fields, "results": [], "error": "请在'基础配置'中配置模型"}
+
+    config_name = config["config_name"]
+    provider = config["provider"]
+    api_key = config["api_key"]
+    model_name = config["model_name"]
+    base_url = config["base_url"]
+    temperature = config["temperature"]
+    max_tokens = config["max_tokens"]
+    overlap = config["overlap"]
+
     # 记录日志：开始解析
-
     await push_log("analyze", f"开始解析 {len(file_paths)} 个文件...")
-
     all_results = []
 
-    # 获取配置中的 API Key 和模型名称（使用最近保存的配置）
-    config = await config_service.get_latest_config()
-    config_name = config.get("config_name", "未知")
-    provider = config.get("provider", "qwen")
-    api_key = config.get("api_key", "")
-    model_name = config.get("model_name", "qwen-max")
-    base_url = config.get("base_url", "")
-    # 获取高级配置
-    temperature = config.get("temperature", 0.1)
-    max_tokens = config.get("max_tokens", 10000)
-    overlap = config.get("overlap", 500)
 
-    # 输出配置信息
-
-    await push_log("analyze", f"配置信息: config_name={config_name}, provider={provider}, model_name={model_name}, api_key={'***' + api_key[-4:] if api_key else ''}, base_url={base_url}, temperature={temperature}, max_tokens={max_tokens}, overlap={overlap}")
-
-    # 检查配置完整性
-    if not api_key:
-        await push_log("analyze", "警告: API Key 为空，请在配置页面设置 API Key")
-        return {"total_files": 0, "fields": fields, "results": [], "error": "API Key 为空"}
-
-    if not base_url:
-        await push_log("analyze", "警告: base_url 为空，请在配置页面设置 API 端点")
-        return {"total_files": 0, "fields": fields, "results": [], "error": "base_url 为空"}
-
-    for file_path in file_paths:
-        #await push_log("analyze", f"开始解析文件: {file_path}")
-
+    total_files = len(file_paths)
+    for i, file_path in enumerate(file_paths):
         # Step 1: 解析 PDF
+        await push_progress({
+            "currentFile": os.path.basename(file_path),
+            "currentStep": "parsing",
+            "currentFileIndex": i + 1,
+            "totalFiles": total_files,
+            "progress": 0
+        })
         content, parse_error = pdf_parser.parse_pdf(file_path)
-        #await push_log("analyze", f"PDF 解析完成，内容长度: {len(content) if content else 0} 字符")
 
         # 检查 PDF 解析是否成功
         if parse_error:
             await push_log("analyze", f"错误: {parse_error} - {os.path.basename(file_path)}")
             continue
 
-        # Step 2: 预估 token 和费用
+        # Step 2: 预估 token 和费用 (10-30%)
+        await push_progress({
+            "currentFile": os.path.basename(file_path),
+            "currentStep": "estimating",
+            "currentFileIndex": i + 1,
+            "totalFiles": total_files,
+            "progress": 5
+        })
+
         input_tokens, estimated_cost = await estimate_and_log_tokens(content, fields, model_name)
         await push_log("analyze", f"文件{os.path.basename(file_path)}预估输入 token: {input_tokens}")
-
-        # Step 3: 字段提取
-        result = llm_service.extract_fields_advanced(content, fields, model_name, api_key, base_url, max_tokens, overlap, temperature)
-        await push_log("analyze", f"文件{os.path.basename(file_path)}解析完成")
+        
+        # Step 3: 字段提取 (map + merge 阶段由 llm_service 推送进度)
+        result = await llm_service.extract_fields_advanced(
+            content, fields, model_name, api_key, base_url, max_tokens, overlap, temperature,
+            file_name=os.path.basename(file_path), file_index=i+1, total_files=len(file_paths)
+        )
 
         # 检查是否有错误
         if result.get("error"):
@@ -200,6 +251,15 @@ async def run_pipeline(file_paths: List[str], fields: List[str]) -> Dict:
                 "results": [],
                 "error": result.get("error")
             }
+
+        # Step 4: 完成 (100%)
+        await push_progress({
+            "currentFile": os.path.basename(file_path),
+            "currentStep": "complete",
+            "currentFileIndex": i + 1,
+            "totalFiles": total_files,
+            "progress": 100
+        })
 
         extracted = result.get("parsed", {})
         raw_response = result.get("raw", "")

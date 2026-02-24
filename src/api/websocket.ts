@@ -30,8 +30,16 @@ export function connectWebSocket(): void {
 
     ws.onmessage = (event) => {
       try {
-        const data = JSON.parse(event.data) as { module: ModuleType; message: string }
-        useAppStore.getState().appendLog(data.module, data.message)
+        const rawData = JSON.parse(event.data)
+
+        // 判断是否为进度消息
+        if (rawData.type === 'progress') {
+          useAppStore.getState().setAnalyzeProgress(rawData.data)
+        } else {
+          // 普通日志消息
+          const data = rawData as { module: ModuleType; message: string }
+          useAppStore.getState().appendLog(data.module, data.message)
+        }
       } catch (error) {
         console.error('解析 WebSocket 消息失败:', error)
       }
