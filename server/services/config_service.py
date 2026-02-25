@@ -33,6 +33,12 @@ def get_config_file_path():
     return config_file
 
 
+def get_data_dir():
+    """获取数据存储目录，与config.json同一目录"""
+    config_path = get_config_file_path()
+    return os.path.dirname(config_path)
+
+
 def get_all_configs_from_file() -> List[Dict]:
     """从配置文件中读取所有配置"""
     config_file = get_config_file_path()

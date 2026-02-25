@@ -30,6 +30,11 @@ export default function AnalyzeProgressPanel() {
   const currentStep = analyzeProgress?.currentStep || 'starting'
   const progress = parseFloat(((analyzeProgress?.progress) || 0).toFixed(1))
 
+  // 文件进度：已完成文件数/总文件数
+  const completedFiles = analyzeProgress ? analyzeProgress.currentFileIndex - 1 : 0
+  const totalFiles = analyzeProgress?.totalFiles || 1
+  const fileProgress = totalFiles > 0 ? (completedFiles / totalFiles) * 100 : 0
+
   return (
     <div className="mt-4 p-4 bg-bg-secondary rounded-lg border border-border">
       {/* 文件名和进度 */}
@@ -39,11 +44,6 @@ export default function AnalyzeProgressPanel() {
             ? `正在解析: ${analyzeProgress.currentFile}`
             : '准备解析...'}
         </span>
-        {analyzeProgress && analyzeProgress.totalFiles > 0 && (
-          <span className="text-xs text-text-muted">
-            已完成 {analyzeProgress.currentFileIndex-1}/{analyzeProgress.totalFiles} 个 PDF
-          </span>
-        )}
       </div>
 
       {/* 当前步骤 */}
@@ -51,7 +51,7 @@ export default function AnalyzeProgressPanel() {
         {stepLabels[currentStep] || currentStep}
       </div>
 
-      {/* 进度条 */}
+      {/* 当前文件进度条 */}
       <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
         <div
           className="h-full bg-accent-primary transition-all duration-300"
@@ -62,6 +62,22 @@ export default function AnalyzeProgressPanel() {
       {/* 百分比 */}
       <div className="text-right text-xs text-text-muted mt-1">
         {progress}%
+      </div>
+
+      {/* 文件进度条 */}
+      <div className="mt-3 pt-3 border-t border-border">
+        <div className="flex items-center justify-between mb-1">
+          <span className="text-xs text-text-muted">文件进度</span>
+          <span className="text-xs text-text-muted">
+            {completedFiles}/{totalFiles} 个 PDF
+          </span>
+        </div>
+        <div className="h-1.5 bg-gray-200 rounded-full overflow-hidden">
+          <div
+            className="h-full bg-green-500 transition-all duration-300"
+            style={{ width: `${fileProgress}%` }}
+          />
+        </div>
       </div>
     </div>
   )

@@ -3,6 +3,7 @@
 负责整合 PDF 解析、分块、字段提取、结果汇总的完整流程
 """
 #print(">>> import pipeline...")
+import json
 import os
 from typing import List, Dict
 import tiktoken
@@ -205,6 +206,7 @@ async def run_pipeline(file_paths: List[str], fields: List[str]) -> Dict:
     # 记录日志：开始解析
     await push_log("analyze", f"开始解析 {len(file_paths)} 个文件...")
     all_results = []
+    all_raw_responses = []
 
 
     total_files = len(file_paths)
@@ -268,6 +270,22 @@ async def run_pipeline(file_paths: List[str], fields: List[str]) -> Dict:
             "file": file_path,
             "extracted": extracted
         })
+
+        # 保存原始响应数据
+        all_raw_responses.append({
+            "file": os.path.basename(file_path),
+            "raw": raw_response
+        })
+
+    # 保存原始数据到文件
+    data_dir = config_service.get_data_dir()
+    raw_data_file = os.path.join(data_dir, "raw_data.json")
+    try:
+        with open(raw_data_file, 'w', encoding='utf-8') as f:
+            json.dump(all_raw_responses, f, ensure_ascii=False, indent=2)
+        await push_log("analyze", f"原始数据已保存到: {raw_data_file}")
+    except Exception as e:
+        await push_log("analyze", f"保存原始数据失败: {str(e)}")
 
     await push_log("analyze", f"解析完成，共处理 {len(all_results)} 个文件")
 

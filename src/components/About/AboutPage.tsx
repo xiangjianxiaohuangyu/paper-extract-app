@@ -55,10 +55,10 @@ function AboutPage() {
         </h2>
         <ul className="space-y-3">
           <li className="flex items-start gap-2">
-            <span className="text-text-secondary">【新增】增加历史保存功能，构建本地知识库</span>
+            <span className="text-text-secondary">【新增】增加历史保存功能，构建本地知识库与Agent</span>
           </li>
           <li className="flex items-start gap-2">
-            <span className="text-text-secondary">【新增】文本清洗，去除页眉页脚、空行乱码等内容</span>
+            <span className="text-text-secondary">【新增】文本清洗，去除页眉页脚、空行乱码等内容，提高token使用效率</span>
           </li>
           <li className="flex items-start gap-2">
             <span className="text-text-secondary">【新增】中断解析功能，并保存已解析的结果</span>
